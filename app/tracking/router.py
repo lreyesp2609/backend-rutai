@@ -351,8 +351,7 @@ async def reanalizar_patron(
 async def forzar_notificacion_predictibilidad(
     usuario_id: int,
     ubicacion_destino_id: int,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     🔧 Fuerza envío de notificación aunque no exista patrón previo
