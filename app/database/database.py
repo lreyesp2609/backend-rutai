@@ -13,11 +13,14 @@ logger = logging.getLogger(__name__)
 engine = create_engine(
     settings.database_url,
     poolclass=NullPool,
-    pool_pre_ping=True,
     echo=settings.debug,
     connect_args={
         "sslmode": "require",
         "connect_timeout": 10,
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
     },
 )
 
