@@ -21,6 +21,7 @@ engine = create_engine(
         "keepalives_idle": 30,
         "keepalives_interval": 10,
         "keepalives_count": 5,
+        "options": "-c statement_timeout=30000"
     },
 )
 
