@@ -19,7 +19,8 @@ engine = create_engine(
     connect_args={
         "sslmode": "require",
         "connect_timeout": 10,
-    }
+    },
+    use_native_hstore=False,   # ← esta línea exacta
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
