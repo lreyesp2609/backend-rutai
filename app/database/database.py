@@ -41,15 +41,18 @@ def get_db():
         db.close()
 
 def test_connection():
-    try:
-        with engine.connect() as connection:
-            result = connection.execute(text("SELECT version();"))
-            version = result.fetchone()[0]
-            logger.info(f"✅ Conexión exitosa a PostgreSQL: {version}")
-            return True
-    except SQLAlchemyError as e:
-        logger.error(f"❌ Error probando la conexión: {e}")
-        return False
+    import time
+    for intento in range(3):
+        try:
+            with engine.connect() as connection:
+                result = connection.execute(text("SELECT version();"))
+                version = result.fetchone()[0]
+                logger.info(f"✅ Conexión exitosa: {version}")
+                return True
+        except SQLAlchemyError as e:
+            logger.error(f"❌ Intento {intento+1}/3 fallido: {e}")
+            time.sleep(2)
+    return False
 
 def create_tables():
     try:
