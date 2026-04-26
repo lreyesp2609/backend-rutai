@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from .config import settings
 import logging
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import QueuePool
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -12,13 +12,16 @@ logger = logging.getLogger(__name__)
 # ⚠️ CONFIGURACIÓN CRÍTICA PARA WEBSOCKETS
 engine = create_engine(
     settings.database_url,
-    poolclass=NullPool,  # ← sin pool, nueva conexión por request
+    poolclass=QueuePool,      # ← Cambiar NullPool por QueuePool
+    pool_size=5,              # ← Máximo 5 conexiones simultáneas
+    max_overflow=10,          # ← Hasta 10 extra en pico
+    pool_timeout=30,
+    pool_pre_ping=True,       # ← Verifica conexiones antes de usarlas
     echo=settings.debug,
     connect_args={
         "sslmode": "require",
         "connect_timeout": 10,
     },
-    use_native_hstore=False,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
