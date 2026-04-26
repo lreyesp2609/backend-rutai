@@ -17,12 +17,8 @@ engine = create_engine(
     pool_recycle=300,
     echo=settings.debug,
     connect_args={
+        "sslmode": "require",
         "connect_timeout": 10,
-        "options": "-c statement_timeout=30000",
-        "keepalives": 1,           # ← mantiene la conexión SSL viva
-        "keepalives_idle": 30,     # ← ping cada 30s si está inactiva
-        "keepalives_interval": 10, # ← reintenta cada 10s
-        "keepalives_count": 5,     # ← hasta 5 reintentos
     }
 )
 
