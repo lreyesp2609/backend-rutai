@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 engine = create_engine(
     settings.database_url,
     poolclass=QueuePool,      # ← Cambiar NullPool por QueuePool
-    pool_size=5,              # ← Máximo 5 conexiones simultáneas
-    max_overflow=10,          # ← Hasta 10 extra en pico
+    pool_size=3,       # 3 conexiones por worker × 2 workers = 6 total
+    max_overflow=2,    # máximo 5 por worker × 2 = 10 total
     pool_timeout=30,
     pool_pre_ping=True,       # ← Verifica conexiones antes de usarlas
     echo=settings.debug,
