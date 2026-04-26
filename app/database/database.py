@@ -11,14 +11,18 @@ logger = logging.getLogger(__name__)
 # ⚠️ CONFIGURACIÓN CRÍTICA PARA WEBSOCKETS
 engine = create_engine(
     settings.database_url,
-    pool_size=3,              # Pocas conexiones persistentes
-    max_overflow=7,           # Hasta 10 conexiones totales (3 + 7)
-    pool_pre_ping=True,       # Verifica que la conexión esté viva
-    pool_recycle=300,         # Recicla cada 5 minutos
+    pool_size=3,
+    max_overflow=7,
+    pool_pre_ping=True,
+    pool_recycle=300,
     echo=settings.debug,
     connect_args={
         "connect_timeout": 10,
-        "options": "-c statement_timeout=30000"  # 30 segundos por query
+        "options": "-c statement_timeout=30000",
+        "keepalives": 1,           # ← mantiene la conexión SSL viva
+        "keepalives_idle": 30,     # ← ping cada 30s si está inactiva
+        "keepalives_interval": 10, # ← reintenta cada 10s
+        "keepalives_count": 5,     # ← hasta 5 reintentos
     }
 )
 
