@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, Date, Time
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, Date, Time, DateTime
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from enum import Enum as PyEnum
 from ..database.database import Base
 
@@ -45,3 +46,14 @@ class Reminder(Base):
     # NUEVOS CAMPOS
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
+
+class GeofenceTrigger(Base):
+    __tablename__ = "geofence_triggers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reminder_id = Column(Integer, ForeignKey("reminders.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    radio_m = Column(Integer, nullable=True)  # 50, 100 o 200
+    triggered_at = Column(DateTime(timezone=True), server_default=func.now())
+    gps_lat = Column(Float, nullable=True)
+    gps_lon = Column(Float, nullable=True)
