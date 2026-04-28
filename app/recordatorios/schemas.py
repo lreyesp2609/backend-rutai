@@ -1,6 +1,6 @@
 from pydantic import BaseModel, field_validator
 from typing import Optional, List, Union
-from datetime import time as datetime_time
+from datetime import datetime, time as datetime_time
 from enum import Enum
 
 class ReminderType(str, Enum):
@@ -110,3 +110,22 @@ class ReminderUpdate(BaseModel):
         if isinstance(v, str):
             return v
         raise ValueError("days debe ser una lista o un string")
+
+class GeofenceTriggerCreate(BaseModel):
+    reminder_id: Optional[int] = None
+    radio_m: int
+    gps_lat: float
+    gps_lon: float
+
+
+class GeofenceTriggerOut(BaseModel):
+    id: int
+    reminder_id: Optional[int] = None
+    user_id: int
+    radio_m: Optional[int] = None
+    triggered_at: datetime
+    gps_lat: Optional[float] = None
+    gps_lon: Optional[float] = None
+
+    class Config:
+        from_attributes = True
