@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .schemas import ReminderCreate, ReminderOut, ReminderUpdate
+from .schemas import GeofenceTriggerCreate, GeofenceTriggerOut, ReminderCreate, ReminderOut, ReminderUpdate
 from .crud import *
+from .models import GeofenceTrigger
 from ..database.database import get_db
 from ..usuarios.security import get_current_user
 
@@ -64,3 +65,21 @@ def edit_reminder(
     
     updated_reminder = update_reminder(db, reminder_id, current_user.id, update_data)
     return updated_reminder
+
+@router.post("/geofence-trigger", response_model=GeofenceTriggerOut)
+def create_geofence_trigger(
+    trigger_data: GeofenceTriggerCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    geofence_trigger = GeofenceTrigger(
+        reminder_id=trigger_data.reminder_id,
+        user_id=current_user.id,
+        radio_m=trigger_data.radio_m,
+        gps_lat=trigger_data.gps_lat,
+        gps_lon=trigger_data.gps_lon,
+    )
+    db.add(geofence_trigger)
+    db.commit()
+    db.refresh(geofence_trigger)
+    return geofence_trigger
