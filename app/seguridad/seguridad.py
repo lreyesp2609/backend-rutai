@@ -306,7 +306,7 @@ def validar_rutas_seguridad(
                 mensaje = None
             elif len(zonas_publicas_detectadas) > 0 and len(validacion_propias['zonas_detectadas']) == 0:
                 # Solo detectó zonas públicas (no propias)
-                mensaje = f"⚠️ Esta ruta pasa por {len(zonas_publicas_detectadas)} zona(s) reportada(s) por otros usuarios"
+                mensaje = "PUBLIC_ZONES_DETECTED"
             elif len(validacion_propias['zonas_detectadas']) > 0:
                 # Detectó zonas propias (con o sin públicas)
                 mensaje = validacion_propias['mensaje']
@@ -360,13 +360,13 @@ def validar_rutas_seguridad(
                 nombre_ruta_traducido = traducir_tipo_ruta(ruta_menos_peligrosa)
                 
                 if nivel_riesgo_minimo >= 4:
-                    advertencia_general = f"TODAS las rutas pasan por zonas de ALTO RIESGO. Recomendamos la ruta '{nombre_ruta_traducido}' (menos peligrosa)."
+                    advertencia_general = "ALL_ROUTES_HIGH_RISK"
                 else:
-                    advertencia_general = f"Todas las rutas pasan por zonas con riesgo. Mantente alerta. Ruta recomendada: '{nombre_ruta_traducido}'."
+                    advertencia_general = "ALL_ROUTES_AT_RISK"
             else:
                 # 🔥 TRADUCIR nombre de ruta
                 nombre_ruta_traducido = traducir_tipo_ruta(mejor_ruta_segura)
-                advertencia_general = f"✅ Usa la ruta '{nombre_ruta_traducido}' (segura). Evita las otras que pasan por zonas peligrosas."
+                advertencia_general = "SAFE_ROUTE_AVAILABLE"
 
         # Contar zonas activas del usuario
         total_zonas = len(zonas_propias)
@@ -549,7 +549,7 @@ def toggle_zona_activa(
         if not zona:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Zona no encontrada"
+                detail="ZONE_NOT_FOUND"
             )
         
         zona.activa = not zona.activa
@@ -649,11 +649,11 @@ def verificar_ubicacion_actual(
         mensaje_alerta = None
         if zonas_detectadas:
             if nivel_peligro_maximo >= 4:
-                mensaje_alerta = f"⚠️ ZONA DE ALTO RIESGO: {zonas_detectadas[0].nombre}"
+                mensaje_alerta = "HIGH_RISK_ZONE"
             elif nivel_peligro_maximo == 3:
-                mensaje_alerta = f"⚠️ ZONA DE RIESGO MODERADO: {zonas_detectadas[0].nombre}"
+                mensaje_alerta = "MODERATE_RISK_ZONE"
             else:
-                mensaje_alerta = f"ℹ️ Zona marcada: {zonas_detectadas[0].nombre}"
+                mensaje_alerta = "MARKED_ZONE"
         
         return VerificarUbicacionResponse(
             hay_peligro=len(zonas_detectadas) > 0,
