@@ -612,14 +612,13 @@ class DetectorDesobedienciaService:
         return desobediencias
     
     def _generar_mensaje_alerta(self):
-        """Mensaje de alerta personalizado"""
-        mensajes = [
-            "We've detected that you frequently use routes different from the recommended ones. For your safety, consider following the suggested routes.",
-            "For your protection, we recommend varying your routes and following the security recommendations.",
-            "We noticed a pattern in your routes. Remember that alternating paths reduces risks."
+        codigos = [
+            "alert_route_pattern_detected",
+            "alert_safety_recommendation", 
+            "alert_route_variety"
         ]
         import random
-        return random.choice(mensajes)
+        return random.choice(codigos)
 
 
 def convertir_puntos_gps_a_geometria(puntos_gps: List[dict]) -> str:
