@@ -23,7 +23,7 @@ def login(
     if not usuario or not verify_password(contrasenia, usuario.contrasenia):
         raise HTTPException(
         status_code=401,
-        detail="Usuario o contraseña incorrectos"
+        detail="INVALID_CREDENTIALS"
         )
 
     access_token = create_access_token(

@@ -48,7 +48,7 @@ def actualizar_perfil(
     ).first()
 
     if not datos:
-        raise HTTPException(status_code=404, detail="Datos de perfil no encontrados")
+        raise HTTPException(status_code=404, detail="PROFILE_NOT_FOUND")
 
     datos.nombre = nombre.strip()
     datos.apellido = apellido.strip()

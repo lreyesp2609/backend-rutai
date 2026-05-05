@@ -46,7 +46,7 @@ def marcar_zona_peligrosa(
         if not validar_coordenadas(zona.lat, zona.lon):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Coordenadas inválidas"
+                detail="INVALID_COORDINATES"
             )
         
         # 🔥 GUARDAR EL CENTRO ORIGINAL COMO PRIMER PUNTO
@@ -126,7 +126,7 @@ def obtener_mis_zonas_peligrosas(
         logger.error(f"Error obteniendo zonas: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al obtener zonas peligrosas"
+            detail="ZONES_FETCH_ERROR"
         )
 
 # ==========================================
@@ -152,7 +152,7 @@ def validar_rutas_seguridad(
         if not ubicacion_destino:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Ubicación de destino no encontrada"
+                detail="LOCATION_NOT_FOUND"
             )
         
         # 2️⃣ Obtener zonas PROPIAS del usuario
@@ -393,7 +393,7 @@ def validar_rutas_seguridad(
         logger.error(f"Error validando rutas: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al validar rutas: {str(e)}"
+            detail="ROUTE_VALIDATION_ERROR"
         )
     
 # ==========================================
@@ -422,7 +422,7 @@ def actualizar_zona_peligrosa(
         if not zona:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Zona no encontrada o no tienes permiso para modificarla"
+                detail="ZONE_NOT_FOUND_OR_FORBIDDEN"
             )
         
         # Actualizar campos
@@ -450,7 +450,7 @@ def actualizar_zona_peligrosa(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al actualizar zona"
+            detail="ZONE_UPDATE_ERROR"
         )
 
 # ==========================================
@@ -477,7 +477,7 @@ def eliminar_zona_peligrosa(
         if not zona:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Zona no encontrada"
+                detail="ZONE_NOT_FOUND"
             )
         
         db.delete(zona)
@@ -493,7 +493,7 @@ def eliminar_zona_peligrosa(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al eliminar zona"
+            detail="ZONE_DELETE_ERROR"
         )
 
 # ==========================================
@@ -522,7 +522,7 @@ def obtener_estadisticas_seguridad(
         logger.error(f"Error obteniendo estadísticas: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al obtener estadísticas"
+            detail="STATS_FETCH_ERROR"
         )
 
 # ==========================================
@@ -562,7 +562,7 @@ def toggle_zona_activa(
         return {
             "zona_id": zona_id,
             "activa": zona.activa,
-            "mensaje": f"Zona {estado} correctamente"
+            "code": "ZONE_STATUS_UPDATED"
         }
         
     except HTTPException:
@@ -572,7 +572,7 @@ def toggle_zona_activa(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al cambiar estado de zona"
+            detail="ZONE_STATUS_CHANGE_ERROR"
         )
 
 @router.post("/verificar-ubicacion-actual", response_model=VerificarUbicacionResponse)
@@ -665,7 +665,7 @@ def verificar_ubicacion_actual(
         logger.error(f"Error verificando ubicación: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error al verificar ubicación: {str(e)}"
+            detail="LOCATION_VERIFY_ERROR"
         )
     
 # ══════════════════════════════════════════════════════════
@@ -741,7 +741,7 @@ def obtener_zonas_sugeridas(
         logger.error(f"Error obteniendo zonas sugeridas: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al obtener zonas sugeridas: {str(e)}"
+            detail="SUGGESTED_ZONES_FETCH_ERROR"
         )
 
 
@@ -770,14 +770,14 @@ def adoptar_zona_sugerida(
         if not zona_original:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Zona sugerida no encontrada"
+                detail="SUGGESTED_ZONE_NOT_FOUND"
             )
         
         # 2. Verificar que NO sea del usuario (seguridad)
         if zona_original.usuario_id == current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Esta zona ya es tuya"
+                detail="ZONE_ALREADY_OWNED"
             )
         
         # 3. Verificar que el usuario no tenga ya una zona con el mismo nombre
@@ -790,7 +790,8 @@ def adoptar_zona_sugerida(
         if existe:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ya tienes una zona llamada '{zona_original.nombre}'"
+                detail="ZONE_NAME_ALREADY_EXISTS",
+                headers={"zone_name": zona_original.nombre}
             )
         
         # 4. Crear COPIA de la zona para el usuario
@@ -819,6 +820,6 @@ def adoptar_zona_sugerida(
         logger.error(f"Error adoptando zona: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al adoptar zona: {str(e)}"
+            status_code=500,
+            detail="ZONE_ADOPT_ERROR"
         )

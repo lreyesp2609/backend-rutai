@@ -48,7 +48,7 @@ async def guardar_punto_gps(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error guardando punto GPS"
+                detail="GPS_SAVE_ERROR"
             )
         
         return {

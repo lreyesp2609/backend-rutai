@@ -25,7 +25,7 @@ def create_new_grupo(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al crear grupo: {str(e)}")
+        raise HTTPException(status_code=400, detail="GROUP_CREATE_ERROR")
 
 @router.get("/listar", response_model=list[GrupoOut])
 def listar_grupos(
@@ -55,10 +55,10 @@ def unirse_a_grupo(
     grupo = db.query(Grupo).filter_by(codigo_invitacion=codigo, is_deleted=False).first()
 
     if not grupo:
-        raise HTTPException(status_code=404, detail="Código de invitación inválido o grupo inexistente")
+        raise HTTPException(status_code=404, detail="INVALID_INVITATION_CODE")
 
     if grupo.creado_por_id == current_user.id:
-        raise HTTPException(status_code=400, detail="Eres el creador de este grupo, ya perteneces a él")
+        raise HTTPException(status_code=400, detail="CREATOR_ALREADY_IN_GROUP")
 
     # ✅ Buscar si el usuario ya fue miembro (activo o inactivo)
     miembro_existente = db.query(MiembroGrupo).filter_by(
@@ -76,7 +76,7 @@ def unirse_a_grupo(
             return grupo
         else:
             # Ya está activo
-            raise HTTPException(status_code=400, detail="Ya perteneces a este grupo")
+            raise HTTPException(status_code=400, detail="ALREADY_IN_GROUP")
 
     # ✅ Si no existe, crear nuevo miembro
     nuevo_miembro = MiembroGrupo(
@@ -103,7 +103,7 @@ def obtener_mensajes_grupo(
     # Validar existencia del grupo
     grupo = db.query(Grupo).filter(Grupo.id == grupo_id, Grupo.is_deleted == False).first()
     if not grupo:
-        raise HTTPException(404, "Grupo no existe")
+        raise HTTPException(404, "GROUP_NOT_FOUND")
     
     # Validar membresía o permisos
     miembro = db.query(MiembroGrupo).filter_by(
@@ -112,7 +112,7 @@ def obtener_mensajes_grupo(
         activo=True
     ).first()
     if not miembro and grupo.creado_por_id != current_user.id:
-        raise HTTPException(403, "No perteneces a este grupo")
+        raise HTTPException(403, "NOT_IN_GROUP")
     
     from sqlalchemy import case, func
 
@@ -176,7 +176,7 @@ def marcar_mensaje_leido(
     
     # 🔥 No permitir que el remitente marque su propio mensaje como leído
     if mensaje.remitente_id == current_user.id:
-        return {"message": "No puedes marcar tu propio mensaje como leído", "leido": False}
+        return {"code": "CANNOT_READ_OWN_MESSAGE", "leido": False}
     
     # Verificar permisos en el grupo
     miembro = db.query(MiembroGrupo).filter_by(
@@ -187,7 +187,7 @@ def marcar_mensaje_leido(
     
     grupo = db.query(Grupo).filter_by(id=grupo_id).first()
     if not miembro and grupo.creado_por_id != current_user.id:
-        raise HTTPException(403, "No perteneces a este grupo")
+        raise HTTPException(403, "NOT_IN_GROUP")
     
     # Verificar si ya fue leído
     lectura_existente = db.query(LecturaMensaje).filter_by(
@@ -196,7 +196,7 @@ def marcar_mensaje_leido(
     ).first()
     
     if lectura_existente:
-        return {"message": "Mensaje ya marcado como leído", "leido": True}
+        return {"code": "MESSAGE_ALREADY_READ", "leido": True}
     
     # Crear registro de lectura
     lectura = LecturaMensaje(
@@ -216,7 +216,7 @@ def marcar_mensaje_leido(
     from .WebSocket.routers import notify_mensaje_leido_sync
     notify_mensaje_leido_sync(grupo_id, mensaje_id, total_lecturas)
     
-    return {"message": "Mensaje marcado como leído", "leido": True}
+    return {"code": "MESSAGE_MARKED_READ", "leido": True}
 
 @router.get("/{grupo_id}/integrantes")
 def integrantes_grupo(
@@ -244,7 +244,7 @@ def integrantes_grupo(
     ).first()
     
     if not miembro and grupo.creado_por_id != current_user.id:
-        raise HTTPException(status_code=403, detail="No perteneces a este grupo")
+        raise HTTPException(status_code=403, detail="NOT_IN_GROUP")
     
     # Obtener integrantes del grupo
     integrantes = db.query(
@@ -305,11 +305,11 @@ def eliminar_grupo(
     ).first()
 
     if not grupo:
-        raise HTTPException(status_code=404, detail="Grupo no encontrado")
+        raise HTTPException(status_code=404, detail="GROUP_NOT_FOUND")
 
     # Solo el creador puede eliminarlo
     if grupo.creado_por_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Solo el creador puede eliminar el grupo")
+        raise HTTPException(status_code=403, detail="ONLY_CREATOR_CAN_DELETE")
 
     # Marcar grupo como eliminado
     grupo.is_deleted = True
@@ -321,7 +321,7 @@ def eliminar_grupo(
 
     db.commit()
 
-    return {"message": f"Grupo '{grupo.nombre}' eliminado correctamente"}
+    return {"code": "GROUP_DELETED_SUCCESS"}
 
 
 @router.post("/{grupo_id}/mensajes/marcar-entregados")
@@ -341,7 +341,7 @@ async def marcar_mensajes_entregados(  # 🔥 CAMBIO 1: Agregar async
     ).first()
     
     if not grupo:
-        raise HTTPException(404, "Grupo no encontrado")
+        raise HTTPException(404, "GROUP_NOT_FOUND")
     
     miembro = db.query(MiembroGrupo).filter_by(
         usuario_id=current_user.id,

@@ -11,7 +11,7 @@ def create_grupo(db: Session, grupo_data, user_id: int):
         # Verificar si ya existe un grupo con el mismo nombre creado por el mismo usuario
         existing = db.query(Grupo).filter_by(nombre=grupo_data.nombre, creado_por_id=user_id, is_deleted=False).first()
         if existing:
-            raise HTTPException(status_code=400, detail="Ya tienes un grupo con ese nombre")
+            raise HTTPException(status_code=400, detail="GROUP_NAME_ALREADY_EXISTS")
 
         # Generar código de invitación aleatorio (8 caracteres)
         codigo = secrets.token_hex(4).upper()
@@ -54,11 +54,11 @@ def salir_de_grupo(db: Session, grupo_id: int, user_id: int):
     ).first()
 
     if not grupo:
-        raise HTTPException(status_code=404, detail="El grupo no existe")
+        raise HTTPException(status_code=404, detail="GROUP_NOT_FOUND")
 
     # El creador no puede salir
     if grupo.creado_por_id == user_id:
-        raise HTTPException(status_code=400, detail="El creador no puede abandonar su propio grupo")
+        raise HTTPException(status_code=400, detail="CREATOR_CANNOT_LEAVE")
 
     miembro = db.query(MiembroGrupo).filter_by(
         usuario_id=user_id,
@@ -66,14 +66,14 @@ def salir_de_grupo(db: Session, grupo_id: int, user_id: int):
     ).first()
 
     if not miembro:
-        raise HTTPException(status_code=400, detail="No perteneces a este grupo")
+        raise HTTPException(status_code=400, detail="NOT_IN_GROUP")
 
     if not miembro.activo:
-        raise HTTPException(status_code=400, detail="Ya no eres miembro de este grupo")
+        raise HTTPException(status_code=400, detail="NO_LONGER_MEMBER")
 
     # 🔹 Solo esta parte cambia: no se borra, se desactiva
     miembro.activo = False
     db.commit()
 
     # 🔹 Mensaje más natural y limpio
-    return {"message": "Has abandonado el grupo correctamente"}
+    return {"code": "GROUP_LEFT_SUCCESS"}

@@ -61,7 +61,7 @@ async def websocket_notificaciones(websocket: WebSocket):
                 print("❌ Token no proporcionado")
                 await websocket.send_text(json.dumps({
                     "type": "error",
-                    "message": "Token no proporcionado"
+                    "code": "TOKEN_NOT_PROVIDED"
                 }))
                 await websocket.close(code=1008)
                 return
@@ -91,8 +91,7 @@ async def websocket_notificaciones(websocket: WebSocket):
                 print(f"❌ Token expirado")
                 await websocket.send_text(json.dumps({
                     "type": "error",
-                    "code": "TOKEN_EXPIRED",
-                    "message": "Token expirado"
+                    "code": "TOKEN_EXPIRED"
                 }))
                 await websocket.close(code=1008)
                 return
@@ -101,8 +100,7 @@ async def websocket_notificaciones(websocket: WebSocket):
                 print(f"❌ Token inválido: {e}")
                 await websocket.send_text(json.dumps({
                     "type": "error",
-                    "code": "TOKEN_INVALID",
-                    "message": f"Token inválido: {str(e)}"
+                    "code": "INVALID_TOKEN"
                 }))
                 await websocket.close(code=1008)
                 return

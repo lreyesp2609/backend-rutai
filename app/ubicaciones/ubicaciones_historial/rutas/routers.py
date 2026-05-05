@@ -47,7 +47,7 @@ def get_ruta(ruta_id: int, db: Session = Depends(get_db)):
     if not db_ruta:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Ruta con ID {ruta_id} no encontrada"
+            detail="ROUTE_NOT_FOUND"
         )
     return db_ruta
 
@@ -60,7 +60,7 @@ def list_rutas(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     if limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El límite máximo es 100"
+            detail="LIMIT_EXCEEDED"
         )
     return crud_rutas.list_rutas(db, skip=skip, limit=limit)
 

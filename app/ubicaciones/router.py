@@ -37,7 +37,7 @@ def obtener_ubicacion_usuario(
 ):
     ubicacion = obtener_ubicacion(db, ubicacion_id, current_user.id)
     if not ubicacion:
-        raise HTTPException(status_code=404, detail="Ubicación no encontrada")
+        raise HTTPException(status_code=404, detail="LOCATION_NOT_FOUND")
     return ubicacion
 
 @router.put("/{ubicacion_id}", response_model=UbicacionUsuarioResponse)
@@ -49,7 +49,7 @@ def actualizar_ubicacion_usuario(
 ):
     ubicacion = actualizar_ubicacion(db, ubicacion_id, current_user.id, datos)
     if not ubicacion:
-        raise HTTPException(status_code=404, detail="Ubicación no encontrada")
+        raise HTTPException(status_code=404, detail="LOCATION_NOT_FOUND")
     if ubicacion == "DUPLICATE_NAME":
         raise HTTPException(status_code=400, detail="LOCATION_NAME_ALREADY_EXISTS")
     return ubicacion
@@ -62,5 +62,5 @@ def eliminar_ubicacion_usuario(
 ):
     ubicacion = eliminar_ubicacion(db, ubicacion_id, current_user.id)
     if not ubicacion:
-        raise HTTPException(status_code=404, detail="Ubicación no encontrada")
+        raise HTTPException(status_code=404, detail="LOCATION_NOT_FOUND")
     return ubicacion

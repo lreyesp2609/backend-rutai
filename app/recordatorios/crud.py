@@ -24,7 +24,7 @@ def create_reminder(db: Session, reminder_data: ReminderCreate, user_id: int):
         if existing:
             raise HTTPException(
                 status_code=400, 
-                detail="Ya existe un recordatorio con ese título"
+                detail="REMINDER_TITLE_DUPLICATE"
             )
 
         reminder_dict = reminder_data.dict()
@@ -55,7 +55,7 @@ def create_reminder(db: Session, reminder_data: ReminderCreate, user_id: int):
         db.rollback()
         raise HTTPException(
             status_code=500, 
-            detail=f"Error al crear recordatorio: {str(e)}"
+            detail="REMINDER_CREATE_ERROR"
         )
     
 def list_reminders(db: Session, user_id: int):
@@ -66,7 +66,7 @@ def list_reminders(db: Session, user_id: int):
         ).all()
         return reminders
     except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener recordatorios: {str(e)}")
+        raise HTTPException(status_code=500, detail="REMINDERS_FETCH_ERROR")
     
 def update_reminder(db: Session, reminder_id: int, user_id: int, reminder_data: dict):
     try:
@@ -82,7 +82,7 @@ def update_reminder(db: Session, reminder_id: int, user_id: int, reminder_data: 
         if not reminder:
             raise HTTPException(
                 status_code=404, 
-                detail="Recordatorio no encontrado"
+                detail="REMINDER_NOT_FOUND"
             )
         
         # 🔵 LOG AGREGADO
@@ -117,5 +117,5 @@ def update_reminder(db: Session, reminder_id: int, user_id: int, reminder_data: 
         print(f"❌ SQLAlchemyError - Rollback ejecutado: {str(e)}")
         raise HTTPException(
             status_code=500, 
-            detail=f"Error al actualizar recordatorio: {str(e)}"
+            detail="REMINDER_UPDATE_ERROR"
         )
