@@ -90,7 +90,7 @@ def marcar_zona_peligrosa(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al marcar zona peligrosa: {str(e)}"
+            detail="ZONE_MARK_ERROR"
         )
 
 # ==========================================

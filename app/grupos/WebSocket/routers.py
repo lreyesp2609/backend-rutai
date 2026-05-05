@@ -321,7 +321,7 @@ async def websocket_ubicaciones(websocket: WebSocket, grupo_id: int):
             if not current_token:
                 await websocket.send_text(json.dumps({
                     "type": "error",
-                    "message": "Token no proporcionado"
+                    "code": "TOKEN_NOT_PROVIDED"
                 }))
                 await websocket.close(code=1008)
                 return
@@ -334,7 +334,7 @@ async def websocket_ubicaciones(websocket: WebSocket, grupo_id: int):
                 if user_id is None:
                     await websocket.send_text(json.dumps({
                         "type": "error",
-                        "message": "Token inválido"
+                        "code": "INVALID_TOKEN"
                     }))
                     await websocket.close(code=1008)
                     return
@@ -342,14 +342,14 @@ async def websocket_ubicaciones(websocket: WebSocket, grupo_id: int):
             except ExpiredSignatureError:
                 await websocket.send_text(json.dumps({
                     "type": "error",
-                    "message": "Token expirado"
+                    "code": "TOKEN_EXPIRED"
                 }))
                 await websocket.close(code=1008)
                 return
             except JWTError as e:
                 await websocket.send_text(json.dumps({
                     "type": "error",
-                    "message": f"Token inválido: {str(e)}"
+                    "code": "INVALID_TOKEN"
                 }))
                 await websocket.close(code=1008)
                 return
@@ -365,7 +365,7 @@ async def websocket_ubicaciones(websocket: WebSocket, grupo_id: int):
             if not user:
                 await websocket.send_text(json.dumps({
                     "type": "error",
-                    "message": "Usuario no encontrado o inactivo"
+                    "code": "USER_NOT_FOUND"
                 }))
                 await websocket.close(code=1008)
                 return
@@ -382,7 +382,7 @@ async def websocket_ubicaciones(websocket: WebSocket, grupo_id: int):
             if not grupo:
                 await websocket.send_text(json.dumps({
                     "type": "error",
-                    "message": f"Grupo {grupo_id} no encontrado"
+                    "code": "GROUP_NOT_FOUND"
                 }))
                 await websocket.close(code=1008)
                 return
@@ -397,7 +397,7 @@ async def websocket_ubicaciones(websocket: WebSocket, grupo_id: int):
             if not miembro and grupo.creado_por_id != user_id:
                 await websocket.send_text(json.dumps({
                     "type": "error",
-                    "message": f"Usuario no pertenece al grupo {grupo_id}"
+                    "code": "USER_NOT_IN_GROUP"
                 }))
                 await websocket.close(code=1008)
                 return
@@ -482,7 +482,7 @@ async def websocket_ubicaciones(websocket: WebSocket, grupo_id: int):
         
         await websocket.send_text(json.dumps({
             "type": "system",
-            "message": f"Conectado a ubicaciones del grupo {grupo_nombre}",
+            "code": "CONNECTED_TO_LOCATIONS",
             "grupo_id": grupo_id
         }))
         
@@ -520,7 +520,7 @@ async def websocket_ubicaciones(websocket: WebSocket, grupo_id: int):
                     except JWTError:
                         await websocket.send_text(json.dumps({
                             "type": "error",
-                            "message": "Token inválido"
+                            "code": "INVALID_TOKEN"
                         }))
                 continue
             

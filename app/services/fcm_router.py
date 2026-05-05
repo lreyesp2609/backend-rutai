@@ -18,7 +18,7 @@ class TokenFCMRequest(BaseModel):
     dispositivo: str = "android"  # android, ios, web
 
 class TokenFCMResponse(BaseModel):
-    message: str
+    code: str
     token_id: int
 
 class TokensResponse(BaseModel):
@@ -52,7 +52,7 @@ async def registrar_token_fcm(
             logger.info(f"🔄 Token FCM actualizado para usuario {user.id}")
             
             return TokenFCMResponse(
-                message="Token FCM actualizado correctamente",
+                code="FCM_TOKEN_UPDATED",
                 token_id=existing_token.id
             )
         
@@ -70,7 +70,7 @@ async def registrar_token_fcm(
             logger.info(f"🔄 Token FCM reemplazado para usuario {user.id}")
             
             return TokenFCMResponse(
-                message="Token FCM reemplazado correctamente",
+                code="FCM_TOKEN_REPLACED",
                 token_id=old_token.id
             )
         
@@ -87,7 +87,7 @@ async def registrar_token_fcm(
         logger.info(f"✅ Nuevo token FCM registrado para usuario {user.id}")
         
         return TokenFCMResponse(
-            message="Token FCM registrado correctamente",
+            code="FCM_TOKEN_REGISTERED",
             token_id=nuevo_token.id
         )
         
@@ -96,7 +96,7 @@ async def registrar_token_fcm(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al registrar token FCM"
+            detail="FCM_TOKEN_REGISTER_ERROR"
         )
 
 
@@ -134,7 +134,7 @@ async def obtener_mis_tokens(
         logger.error(f"❌ Error obteniendo tokens: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al obtener tokens"
+            detail="FCM_TOKENS_FETCH_ERROR"
         )
 
 
@@ -157,7 +157,7 @@ async def eliminar_token_especifico(
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Token no encontrado"
+                detail="FCM_TOKEN_NOT_FOUND"
             )
         
         db.delete(token)
@@ -165,7 +165,7 @@ async def eliminar_token_especifico(
         
         logger.info(f"🗑️ Token FCM {token_id} eliminado para usuario {user.id}")
         
-        return {"message": "Token eliminado correctamente"}
+        return {"code": "FCM_TOKEN_DELETED"}
         
     except HTTPException:
         raise
@@ -174,7 +174,7 @@ async def eliminar_token_especifico(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al eliminar token"
+            detail="FCM_TOKEN_DELETE_ERROR"
         )
 
 
@@ -197,7 +197,7 @@ async def eliminar_todos_mis_tokens(
         logger.info(f"🗑️ {cantidad} token(s) FCM eliminados para usuario {user.id}")
         
         return {
-            "message": f"{cantidad} token(s) eliminado(s) correctamente",
+            "code": "FCM_TOKENS_DELETED",
             "cantidad": cantidad
         }
         
@@ -206,5 +206,5 @@ async def eliminar_todos_mis_tokens(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al eliminar tokens"
+            detail="FCM_TOKENS_DELETE_ERROR"
         )

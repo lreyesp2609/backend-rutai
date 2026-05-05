@@ -614,9 +614,9 @@ class DetectorDesobedienciaService:
     def _generar_mensaje_alerta(self):
         """Mensaje de alerta personalizado"""
         mensajes = [
-            "Hemos detectado que frecuentemente usas rutas diferentes a las recomendadas. Por tu seguridad, considera seguir las rutas sugeridas.",
-            "Para tu protección, te recomendamos variar tus rutas y seguir las recomendaciones de seguridad.",
-            "Notamos un patrón en tus rutas. Recuerda que alternando trayectos reduces riesgos."
+            "We've detected that you frequently use routes different from the recommended ones. For your safety, consider following the suggested routes.",
+            "For your protection, we recommend varying your routes and following the security recommendations.",
+            "We noticed a pattern in your routes. Remember that alternating paths reduces risks."
         ]
         import random
         return random.choice(mensajes)
