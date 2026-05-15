@@ -118,8 +118,13 @@ async def startup_event():
             db.close()
         
         # PASO 4: Iniciar scheduler de silent ping FCM
-        from .services.cron_jobs import start_scheduler
-        start_scheduler()
+        try:
+            from .services.cron_jobs import start_scheduler
+            start_scheduler()
+        except ImportError as e:
+            logger.warning(f"⚠️ Scheduler no disponible (instalar APScheduler): {e}")
+        except Exception as e:
+            logger.error(f"❌ Error iniciando scheduler: {e}")
     else:
         logger.error("❌ No se pudo conectar a la base de datos")
 
@@ -129,8 +134,11 @@ async def shutdown_event():
     """
     Se ejecuta al cerrar la aplicación.
     """
-    from .services.cron_jobs import stop_scheduler
-    stop_scheduler()
+    try:
+        from .services.cron_jobs import stop_scheduler
+        stop_scheduler()
+    except ImportError:
+        pass
     logger.info("🛑 Cerrando la aplicación")
 
 @app.get("/")
