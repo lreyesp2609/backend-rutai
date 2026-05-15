@@ -87,7 +87,23 @@ async def startup_event():
         create_tables()
         logger.info("✅ Tablas creadas exitosamente")
         
-        # PASO 2: Crear datos semilla
+        # PASO 2: Migraciones inline (columnas nuevas en tablas existentes)
+        # create_tables() solo crea tablas nuevas, no agrega columnas a las existentes.
+        db = SessionLocal()
+        try:
+            db.execute(text(
+                "ALTER TABLE usuarios "
+                "ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP WITH TIME ZONE DEFAULT NULL"
+            ))
+            db.commit()
+            logger.info("✅ Migración last_active_at aplicada")
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"⚠️ Migración last_active_at: {e}")
+        finally:
+            db.close()
+        
+        # PASO 3: Crear datos semilla
         db = SessionLocal()
         try:
             create_default_roles_and_admin(db)
@@ -101,7 +117,7 @@ async def startup_event():
         finally:
             db.close()
         
-        # PASO 3: Iniciar scheduler de silent ping FCM
+        # PASO 4: Iniciar scheduler de silent ping FCM
         from .services.cron_jobs import start_scheduler
         start_scheduler()
     else:
