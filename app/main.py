@@ -42,7 +42,7 @@ app.add_middleware(
 )
 
 # 🆕 AGREGAR ESTE ENDPOINT DE HEALTH CHECK
-@app.get("/health", status_code=status.HTTP_200_OK)
+@app.api_route("/health", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
 async def health_check():
     """
     Endpoint de health check para Azure Container Apps.
