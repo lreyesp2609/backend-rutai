@@ -48,6 +48,7 @@ async def registrar_token_fcm(
             # Actualizar fecha
             existing_token.updated_at = datetime.now(timezone.utc)
             existing_token.dispositivo = request.dispositivo
+            user.last_active_at = datetime.now(timezone.utc)
             db.commit()
             logger.info(f"🔄 Token FCM actualizado para usuario {user.id}")
             
@@ -66,6 +67,7 @@ async def registrar_token_fcm(
             # Reemplazar token antiguo
             old_token.token = request.token
             old_token.updated_at = datetime.now(timezone.utc)
+            user.last_active_at = datetime.now(timezone.utc)
             db.commit()
             logger.info(f"🔄 Token FCM reemplazado para usuario {user.id}")
             
@@ -81,6 +83,7 @@ async def registrar_token_fcm(
             dispositivo=request.dispositivo
         )
         db.add(nuevo_token)
+        user.last_active_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(nuevo_token)
         

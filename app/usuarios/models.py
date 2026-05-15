@@ -22,6 +22,7 @@ class Usuario(Base):
     datos_personales_id = Column(Integer, ForeignKey("datos_personales.id"), nullable=False)
     rol_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     activo = Column(Boolean, default=True)
+    last_active_at = Column(DateTime(timezone=True), nullable=True, index=True)
 
     datos_personales = relationship("DatosPersonales")
     rol = relationship("Rol")

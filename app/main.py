@@ -41,6 +41,10 @@ app.add_middleware(
     allowed_hosts=["*"]
 )
 
+# Middleware de tracking de actividad (actualiza last_active_at con throttle de 5 min)
+from .middleware.activity import ActivityTrackingMiddleware
+app.add_middleware(ActivityTrackingMiddleware)
+
 # 🆕 AGREGAR ESTE ENDPOINT DE HEALTH CHECK
 @app.api_route("/health", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
 async def health_check():
@@ -96,6 +100,10 @@ async def startup_event():
             
         finally:
             db.close()
+        
+        # PASO 3: Iniciar scheduler de silent ping FCM
+        from .services.cron_jobs import start_scheduler
+        start_scheduler()
     else:
         logger.error("❌ No se pudo conectar a la base de datos")
 
@@ -105,6 +113,8 @@ async def shutdown_event():
     """
     Se ejecuta al cerrar la aplicación.
     """
+    from .services.cron_jobs import stop_scheduler
+    stop_scheduler()
     logger.info("🛑 Cerrando la aplicación")
 
 @app.get("/")

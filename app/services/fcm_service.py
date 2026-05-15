@@ -385,6 +385,87 @@ class FCMService:
             logger.error(f"❌ Error verificando token: {e}")
             return False
 
+    async def send_silent_refresh_ping(self, fcm_token: str) -> str:
+        """
+        Envía un FCM Data Message silencioso para despertar la app Android
+        y que refresque el access_token sin intervención del usuario.
+
+        Características:
+          - SIN campo notification:{} → no genera notificación visible
+          - android.priority='high' → rompe Doze mode / App Standby
+          - data.type='SILENT_TOKEN_REFRESH' → Android identifica el intent
+
+        Args:
+            fcm_token: Token FCM del dispositivo destino
+
+        Returns:
+            str: Estado del envío:
+              - 'sent'          → Mensaje enviado correctamente
+              - 'invalid_token' → Token inválido, eliminado de la DB
+              - 'error'         → Error inesperado, token NO eliminado
+        """
+        try:
+            message = messaging.Message(
+                # ✅ SOLO data, SIN notification — completamente silencioso
+                data={
+                    "type": "SILENT_TOKEN_REFRESH"
+                },
+                token=fcm_token,
+                android=messaging.AndroidConfig(
+                    priority='high'  # Rompe Doze mode
+                )
+            )
+
+            response = messaging.send(message)
+            logger.debug(f"📡 Silent ping enviado: {response}")
+            return "sent"
+
+        except messaging.UnregisteredError:
+            # Token fue válido pero el dispositivo ya no está registrado
+            logger.warning(f"⚠️ Token FCM no registrado, limpiando: {fcm_token[:20]}...")
+            self._cleanup_invalid_token(fcm_token)
+            return "invalid_token"
+
+        except firebase_admin.exceptions.InvalidArgumentError:
+            # Token con formato inválido o corrupto
+            logger.warning(f"⚠️ Token FCM inválido, limpiando: {fcm_token[:20]}...")
+            self._cleanup_invalid_token(fcm_token)
+            return "invalid_token"
+
+        except Exception as e:
+            # Error del SDK o de red — NO eliminar el token (puede ser temporal)
+            logger.error(f"❌ Error enviando silent ping: {e}")
+            return "error"
+
+    def _cleanup_invalid_token(self, fcm_token: str) -> None:
+        """
+        Elimina un token FCM inválido de la tabla fcm_tokens.
+        
+        Usa SQLAlchemy Core (DELETE directo) en lugar de ORM para
+        ser lo más liviano posible — no carga el objeto FCMToken.
+        """
+        try:
+            from ..usuarios.models import FCMToken
+            from ..database.database import SessionLocal
+            from sqlalchemy import delete
+
+            db = SessionLocal()
+            try:
+                result = db.execute(
+                    delete(FCMToken).where(FCMToken.token == fcm_token)
+                )
+                db.commit()
+                deleted = result.rowcount
+                if deleted:
+                    logger.info(f"🗑️ Token FCM inválido eliminado de la DB ({deleted} fila(s))")
+                else:
+                    logger.warning(f"⚠️ Token FCM no encontrado en DB para limpiar: {fcm_token[:20]}...")
+            finally:
+                db.close()
+
+        except Exception as e:
+            logger.error(f"❌ Error limpiando token FCM de la DB: {e}")
+
 
 # ✅ Instancia única global (singleton)
 fcm_service = FCMService()
