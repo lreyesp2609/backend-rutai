@@ -32,12 +32,13 @@ def login(
     refresh_token = create_refresh_token()
     expiracion = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
 
-    crear_sesion(db, usuario.id, refresh_token, expiracion, dispositivo, version_app, ip)
+    nueva_sesion = crear_sesion(db, usuario.id, refresh_token, expiracion, dispositivo, version_app, ip)
 
     return JSONResponse({
         "access_token": access_token,
         "refresh_token": refresh_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "sesion_id": str(nueva_sesion.id)
     })
 
 # 🔹 Refresh token
@@ -77,7 +78,8 @@ def refresh_token(refresh_token: str = Form(...), db: Session = Depends(get_db))
     return {
         "access_token": nuevo_access,
         "refresh_token": nuevo_refresh,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "sesion_id": str(sesion.id)
     }
 
 # 🔹 Logout
