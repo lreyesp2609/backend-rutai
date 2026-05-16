@@ -8,7 +8,7 @@ from datetime import datetime
 # ───────────────────────────────────────────────
 
 class LatenciaCreate(BaseModel):
-    sesion_id: Optional[int] = None
+    sesion_id: Optional[str] = None
     dispositivo_id: str = Field(..., max_length=100)
     modelo_dispositivo: Optional[str] = Field(None, max_length=100)
     so_version: Optional[str] = Field(None, max_length=50)
@@ -57,7 +57,7 @@ class LatenciaResponse(BaseModel):
 # ───────────────────────────────────────────────
 
 class ConsumoEnergeticoCreate(BaseModel):
-    sesion_id: Optional[int] = None
+    sesion_id: Optional[str] = None
     dispositivo_id: str = Field(..., max_length=100)
     modelo_dispositivo: Optional[str] = Field(None, max_length=100)
     so_version: Optional[str] = Field(None, max_length=50)

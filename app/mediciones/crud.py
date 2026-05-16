@@ -12,8 +12,9 @@ from .schemas import LatenciaCreate, ConsumoEnergeticoCreate
 
 def crear_latencia(db: Session, data: LatenciaCreate) -> LatenciaMetrica:
     """Crea un registro de latencia."""
+    sesion_id_val = int(data.sesion_id) if data.sesion_id and str(data.sesion_id).strip() else None
     registro = LatenciaMetrica(
-        sesion_id=data.sesion_id,
+        sesion_id=sesion_id_val,
         dispositivo_id=data.dispositivo_id,
         modelo_dispositivo=data.modelo_dispositivo,
         so_version=data.so_version,
@@ -36,8 +37,9 @@ def crear_latencia_batch(db: Session, registros: List[LatenciaCreate]) -> List[L
     """Crea múltiples registros de latencia en un solo commit."""
     objetos = []
     for data in registros:
+        sesion_id_val = int(data.sesion_id) if data.sesion_id and str(data.sesion_id).strip() else None
         obj = LatenciaMetrica(
-            sesion_id=data.sesion_id,
+            sesion_id=sesion_id_val,
             dispositivo_id=data.dispositivo_id,
             modelo_dispositivo=data.modelo_dispositivo,
             so_version=data.so_version,
@@ -97,8 +99,10 @@ def crear_consumo(db: Session, data: ConsumoEnergeticoCreate) -> ConsumoEnergeti
     if data.carga_inicio_mah is not None and data.carga_fin_mah is not None:
         consumo_mah = data.carga_inicio_mah - data.carga_fin_mah
 
+    sesion_id_val = int(data.sesion_id) if data.sesion_id and str(data.sesion_id).strip() else None
+
     registro = ConsumoEnergetico(
-        sesion_id=data.sesion_id,
+        sesion_id=sesion_id_val,
         dispositivo_id=data.dispositivo_id,
         modelo_dispositivo=data.modelo_dispositivo,
         so_version=data.so_version,
