@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .models import LatenciaMetrica, ConsumoEnergetico
 from .schemas import LatenciaCreate, ConsumoEnergeticoCreate
@@ -24,6 +24,7 @@ def crear_latencia(db: Session, data: LatenciaCreate) -> LatenciaMetrica:
         latitud=data.latitud,
         longitud=data.longitud,
         red=data.red,
+        timestamp=data.timestamp or datetime.now(timezone.utc),
     )
     db.add(registro)
     db.commit()
@@ -47,6 +48,7 @@ def crear_latencia_batch(db: Session, registros: List[LatenciaCreate]) -> List[L
             latitud=data.latitud,
             longitud=data.longitud,
             red=data.red,
+            timestamp=data.timestamp or datetime.now(timezone.utc),
         )
         objetos.append(obj)
     db.add_all(objetos)

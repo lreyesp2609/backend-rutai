@@ -19,6 +19,7 @@ class LatenciaCreate(BaseModel):
     latitud: Optional[float] = None
     longitud: Optional[float] = None
     red: Optional[str] = Field(None, pattern="^(wifi|4g|3g|5g|ethernet)$")
+    timestamp: Optional[datetime] = None
 
 
 class LatenciaBatchCreate(BaseModel):
