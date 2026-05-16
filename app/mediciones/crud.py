@@ -87,8 +87,14 @@ def listar_latencias(
 # ───────────────────────────────────────────────
 
 def crear_consumo(db: Session, data: ConsumoEnergeticoCreate) -> ConsumoEnergetico:
-    """Crea un registro de consumo energético. consumo_pct se calcula automáticamente."""
+    """Crea un registro de consumo energético. consumo_pct y consumo_mah se calculan automáticamente."""
     consumo_pct = data.bateria_inicio_pct - data.bateria_fin_pct
+
+    # Calcular consumo_mah si ambos campos vienen en el request
+    consumo_mah = None
+    if data.carga_inicio_mah is not None and data.carga_fin_mah is not None:
+        consumo_mah = data.carga_inicio_mah - data.carga_fin_mah
+
     registro = ConsumoEnergetico(
         sesion_id=data.sesion_id,
         dispositivo_id=data.dispositivo_id,
@@ -103,6 +109,12 @@ def crear_consumo(db: Session, data: ConsumoEnergeticoCreate) -> ConsumoEnergeti
         pantalla_encendida=data.pantalla_encendida,
         timestamp_inicio=data.timestamp_inicio,
         timestamp_fin=data.timestamp_fin,
+        corriente_promedio_ma=data.corriente_promedio_ma,
+        voltaje_promedio_mv=data.voltaje_promedio_mv,
+        energia_consumida_joules=data.energia_consumida_joules,
+        carga_inicio_mah=data.carga_inicio_mah,
+        carga_fin_mah=data.carga_fin_mah,
+        consumo_mah=consumo_mah,
     )
     db.add(registro)
     db.commit()

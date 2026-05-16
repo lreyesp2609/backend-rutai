@@ -48,3 +48,15 @@ class ConsumoEnergetico(Base):
     pantalla_encendida = Column(Boolean, default=False)
     timestamp_inicio = Column(DateTime(timezone=True), nullable=False)
     timestamp_fin = Column(DateTime(timezone=True), nullable=False)
+
+    # Datos físicos de corriente y voltaje
+    corriente_promedio_ma = Column(Float, nullable=True)
+    voltaje_promedio_mv = Column(Float, nullable=True)
+
+    # Energía calculada
+    energia_consumida_joules = Column(Float, nullable=True)
+
+    # Carga en mAh (más preciso que porcentaje)
+    carga_inicio_mah = Column(Float, nullable=True)
+    carga_fin_mah = Column(Float, nullable=True)
+    consumo_mah = Column(Float, nullable=True)

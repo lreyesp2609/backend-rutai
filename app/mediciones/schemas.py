@@ -68,6 +68,12 @@ class ConsumoEnergeticoCreate(BaseModel):
     pantalla_encendida: bool = False
     timestamp_inicio: datetime
     timestamp_fin: datetime
+    # Datos físicos de batería (opcionales)
+    corriente_promedio_ma: Optional[float] = None
+    voltaje_promedio_mv: Optional[float] = None
+    energia_consumida_joules: Optional[float] = None
+    carga_inicio_mah: Optional[float] = None
+    carga_fin_mah: Optional[float] = None
 
 
 class ConsumoEnergeticoResponse(BaseModel):
@@ -85,6 +91,13 @@ class ConsumoEnergeticoResponse(BaseModel):
     pantalla_encendida: bool
     timestamp_inicio: datetime
     timestamp_fin: datetime
+    # Datos físicos de batería
+    corriente_promedio_ma: Optional[float] = None
+    voltaje_promedio_mv: Optional[float] = None
+    energia_consumida_joules: Optional[float] = None
+    carga_inicio_mah: Optional[float] = None
+    carga_fin_mah: Optional[float] = None
+    consumo_mah: Optional[float] = None
 
     class Config:
         from_attributes = True
