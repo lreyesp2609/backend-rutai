@@ -12,6 +12,8 @@ from .database.seed import create_default_roles_and_admin
 from .ubicaciones.ubicaciones_historial.seed import create_default_estados_ubicacion
 from .grupos.models import *
 from .seguridad.models import *
+from .experimento.models import *
+from .mediciones.models import *
 import logging
 
 # Configurar logging
@@ -172,6 +174,8 @@ from .services.fcm_router import router as fcm_router
 from .grupos.WebSocket.routers import router as ws_grupos_router
 from .seguridad.seguridad import router as seguridad_router
 from .tracking.router import router as tracking_router
+from .experimento.router import router as experimento_router
+from .mediciones.router import router as mediciones_router
 
 app.include_router(usuarios_router)
 app.include_router(login_router)
@@ -185,6 +189,8 @@ app.include_router(fcm_router)
 app.include_router(ws_grupos_router)
 app.include_router(seguridad_router)
 app.include_router(tracking_router)
+app.include_router(experimento_router, prefix="/experimento", tags=["Experimento"])
+app.include_router(mediciones_router, prefix="/mediciones", tags=["Mediciones"])
 
 if __name__ == "__main__":
     import uvicorn

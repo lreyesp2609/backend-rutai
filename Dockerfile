@@ -14,5 +14,5 @@ COPY . .
 # Exponer puerto
 EXPOSE 8000
 
-# 🔥 CAMBIO: Sin --reload para producción
+# CAMBIO: Sin --reload para producción
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

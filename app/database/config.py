@@ -27,6 +27,9 @@ class Settings(BaseSettings):
         "http://192.168.1.100:19006"
     ]
     
+    # Experimento geofencing
+    geofence_match_window_seconds: int = 30
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
