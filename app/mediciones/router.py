@@ -61,7 +61,7 @@ def crear_latencia_batch(
     db: Session = Depends(get_db),
 ):
     """Registra hasta 50 mediciones de latencia en un solo lote."""
-    return crud.crear_latencia_batch(db, data.registros)
+    return crud.crear_latencia_batch(db, data.mediciones)
 
 
 @router.get("/latencia", response_model=List[LatenciaResponse])

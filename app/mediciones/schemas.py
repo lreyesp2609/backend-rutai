@@ -22,13 +22,13 @@ class LatenciaCreate(BaseModel):
 
 
 class LatenciaBatchCreate(BaseModel):
-    registros: List[LatenciaCreate] = Field(..., max_length=50)
+    mediciones: List[LatenciaCreate] = Field(..., max_length=50)
 
-    @field_validator("registros")
+    @field_validator("mediciones")
     @classmethod
     def validar_maximo(cls, v):
         if len(v) > 50:
-            raise ValueError("Máximo 50 registros por lote")
+            raise ValueError("Máximo 50 mediciones por lote")
         return v
 
 
