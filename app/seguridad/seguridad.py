@@ -636,9 +636,9 @@ def verificar_ubicacion_actual(
             if dentro:
                 # Determinar risk_level descriptivo
                 risk_level = "bajo"
-                if zona.nivel_peligro >= 4:
+                if zona.nivel_peligro == 3:
                     risk_level = "alto"
-                elif zona.nivel_peligro == 3:
+                elif zona.nivel_peligro == 2:
                     risk_level = "medio"
 
                 zonas_detectadas.append(ZonaPeligrosaDetectada(
@@ -656,9 +656,9 @@ def verificar_ubicacion_actual(
         # 3. Generar mensaje de alerta
         mensaje_alerta = None
         if zonas_detectadas:
-            if nivel_peligro_maximo >= 4:
+            if nivel_peligro_maximo == 3:
                 mensaje_alerta = "Zona de alto riesgo"
-            elif nivel_peligro_maximo == 3:
+            elif nivel_peligro_maximo == 2:
                 mensaje_alerta = "Zona de riesgo moderado"
             else:
                 mensaje_alerta = "Zona de bajo riesgo"
