@@ -700,22 +700,36 @@ def obtener_zonas_sugeridas(
         
         logger.info(f"📊 Total zonas públicas en BD: {len(zonas_publicas)}")
         
-        # 2. Obtener IDs de zonas que el usuario YA tiene
-        zonas_propias = db.query(ZonaPeligrosaUsuario.id).filter(
+        # 2. Obtener zonas que el usuario YA tiene
+        zonas_propias = db.query(ZonaPeligrosaUsuario).filter(
             ZonaPeligrosaUsuario.usuario_id == current_user.id,
             ZonaPeligrosaUsuario.activa == True
         ).all()
         
-        ids_propias = {z.id for z in zonas_propias}
-        logger.info(f"🔒 Usuario tiene {len(ids_propias)} zonas propias")
+        # Crear huellas únicas para detectar zonas adoptadas (mismo nombre + coordenadas)
+        def crear_huella_zona(zona):
+            if not zona.poligono:
+                return None
+            centro = zona.poligono[0]
+            lat = round(centro['lat'], 5)
+            lon = round(centro['lon'], 5)
+            return f"{zona.nombre.lower().strip()}:{lat}:{lon}"
+            
+        huellas_propias = {
+            crear_huella_zona(z) for z in zonas_propias 
+            if crear_huella_zona(z) is not None
+        }
+        
+        logger.info(f"🔒 Usuario tiene {len(huellas_propias)} zonas propias (huellas)")
         
         # 3. Filtrar zonas cercanas
         zonas_cercanas = []
         radio_metros = radio_km * 1000
         
         for zona in zonas_publicas:
-            # Saltar si el usuario ya tiene esta zona (caso improbable pero posible)
-            if zona.id in ids_propias:
+            # Saltar si la huella de la zona pública ya la tiene el usuario (zona adoptada)
+            huella_publica = crear_huella_zona(zona)
+            if huella_publica and huella_publica in huellas_propias:
                 continue
             
             # Obtener centro de la zona
