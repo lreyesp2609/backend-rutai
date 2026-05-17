@@ -634,10 +634,18 @@ def verificar_ubicacion_actual(
             dentro = distancia <= radio_zona
             
             if dentro:
+                # Determinar risk_level descriptivo
+                risk_level = "bajo"
+                if zona.nivel_peligro >= 4:
+                    risk_level = "alto"
+                elif zona.nivel_peligro == 3:
+                    risk_level = "medio"
+
                 zonas_detectadas.append(ZonaPeligrosaDetectada(
                     zona_id=zona.id,
                     nombre=zona.nombre,
                     nivel_peligro=zona.nivel_peligro,
+                    risk_level=risk_level,
                     tipo=zona.tipo,
                     distancia_al_centro=round(distancia, 1),
                     dentro_de_zona=True
@@ -649,11 +657,11 @@ def verificar_ubicacion_actual(
         mensaje_alerta = None
         if zonas_detectadas:
             if nivel_peligro_maximo >= 4:
-                mensaje_alerta = "HIGH_RISK_ZONE"
+                mensaje_alerta = "Zona de alto riesgo"
             elif nivel_peligro_maximo == 3:
-                mensaje_alerta = "MODERATE_RISK_ZONE"
+                mensaje_alerta = "Zona de riesgo moderado"
             else:
-                mensaje_alerta = "MARKED_ZONE"
+                mensaje_alerta = "Zona de bajo riesgo"
         
         return VerificarUbicacionResponse(
             hay_peligro=len(zonas_detectadas) > 0,

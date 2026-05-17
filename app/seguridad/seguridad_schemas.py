@@ -113,6 +113,7 @@ class ZonaPeligrosaDetectada(BaseModel):
     zona_id: int
     nombre: str
     nivel_peligro: int
+    risk_level: Optional[str] = None
     tipo: Optional[str]
     distancia_al_centro: float  # en metros
     dentro_de_zona: bool
