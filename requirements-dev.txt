@@ -1,0 +1,11 @@
+# ============================================================
+# Dependencias de DESARROLLO — NO incluir en la imagen Docker
+# Instalar con: pip install -r requirements-dev.txt
+# ============================================================
+
+# Hot-reload para uvicorn en desarrollo
+watchfiles==1.1.1
+
+# Tests
+pytest
+httpx   # cliente async para tests de FastAPI (TestClient)

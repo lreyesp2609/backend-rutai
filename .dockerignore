@@ -1,0 +1,49 @@
+# ── Secretos y configuración sensible ──────────────────────
+.env
+.env.local
+.env.production
+**/firebase-credentials.json
+**/*firebase*.json
+
+# ── Control de versiones ────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+
+# ── Documentación (no necesaria en la imagen) ───────────────
+README.md
+ENDPOINTS.md
+DOCUMENTOS/
+
+# ── Artefactos Python ───────────────────────────────────────
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Entornos virtuales ──────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── IDEs y editores ─────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Sistema operativo ───────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Docker mismo ────────────────────────────────────────────
+Dockerfile
+docker-compose.yml
+docker-compose*.yml
+.dockerignore
+
+# ── Dependencias de desarrollo ──────────────────────────────
+requirements-dev.txt
