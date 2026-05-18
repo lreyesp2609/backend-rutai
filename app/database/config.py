@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     
     # API Configuration
-    api_base_url: str  # ← AGREGA ESTA LÍNEA
+    api_base_url: str = "http://localhost:8000"
     
     # CORS
     allowed_origins: List[str] = [

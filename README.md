@@ -1,175 +1,185 @@
-# 🗂️ rutai
+# 🗂️ RutAI Backend
 
 ## 📖 Descripción del proyecto
 
-`rutai` es una API **RESTful** basada en **FastAPI** que sirve como backend para la aplicación *RutAI*. Proporciona servicios de autenticación, gestión de usuarios, almacenamiento de datos y funcionalidades en tiempo real mediante **Redis**. La API está diseñada para ser altamente escalable, segura y fácil de desplegar en plataformas como **Render**.
+`rutai` es una API **RESTful** basada en **FastAPI** que sirve como backend para la aplicación *RutAI*. Proporciona servicios de autenticación, gestión de usuarios, tracking de ubicación, zonas de seguridad, grupos, recordatorios, notificaciones push (Firebase FCM) y métricas de experimentos de geofencing.
 
 ---
 
 ## 🛠️ Tecnologías usadas
 
-| Categoría      | Tecnologías |
-|----------------|-------------|
-| Framework      | FastAPI (Python 3.11) |
-| Base de datos  | PostgreSQL (a través de Supabase) |
-| BaaS / Auth    | Supabase (para gestión de usuarios y OAuth) |
-| Cache / Mensajería | Redis |
-| Deploy         | Render (servicio de hosting) |
-| Otros          | Pydantic, SQLAlchemy, Alembic, python‑dotenv |
+| Categoría            | Tecnologías                                         |
+|----------------------|-----------------------------------------------------|
+| Framework            | FastAPI (Python 3.12)                               |
+| Base de datos        | PostgreSQL vía Supabase (Transaction Pooler)        |
+| ORM                  | SQLAlchemy 2.0                                      |
+| Validación           | Pydantic v2 + pydantic-settings                     |
+| Autenticación        | JWT (python-jose / PyJWT) + bcrypt                  |
+| Notificaciones push  | Firebase Admin SDK (FCM)                            |
+| Tiempo real          | WebSockets nativos de FastAPI                       |
+| Deploy               | Render (Web Service)                                |
+| Contenedores         | Docker (multi-stage build) + Docker Compose         |
 
 ---
 
 ## 📦 Requisitos previos
 
-- **Python ≥ 3.11**
-- **Node.js (opcional)** – Solo si deseas generar tipos TypeScript para el cliente.
-- **Docker** (opcional, recomendado) – Para levantar una base de datos PostgreSQL y Redis locales.
-- **Cuenta en Supabase** (para obtener `SUPABASE_URL` y `SUPABASE_KEY`).
-- **Cuenta en Render** (para despliegue). 
+- **Python ≥ 3.12**
+- **Docker Desktop** (para levantar localmente con contenedor)
+- **Cuenta en Supabase** (base de datos PostgreSQL gestionada)
+- **Proyecto Firebase** con FCM habilitado (solo para notificaciones push)
 
 ---
 
-## 🚀 Instalación y ejecución local
+## 🚀 Ejecución local
+
+### Opción A — Con Docker (recomendado)
 
 1. **Clonar el repositorio**
    ```bash
-   git clone https://github.com/tu-usuario/recuerdago-api.git
-   cd recuerdago-api
+   git clone https://github.com/tu-usuario/backend-rutai.git
+   cd backend-rutai
    ```
 
-2. **Crear y activar un entorno virtual**
-   ```bash
-   python -m venv .venv
-   .\.venv\Scripts\activate   # Windows
-   # source .venv/bin/activate   # macOS/Linux
-   ```
-
-3. **Instalar dependencias**
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-4. **Crear archivo de variables de entorno**
-   Copia el ejemplo y rellena los valores:
+2. **Crear archivo de variables de entorno**
    ```bash
    cp .env.example .env
    ```
-   Edita `.env` con tus credenciales (ver sección *Variables de entorno*).
+   Edita `.env` y rellena al menos las 4 variables obligatorias (ver sección *Variables de entorno*).
 
-5. **Inicializar la base de datos**
+3. **Build y levantar**
    ```bash
-   alembic upgrade head   # aplica migraciones
+   docker build -t rutai-backend:local .
+   docker compose up
+   ```
+   La API estará disponible en `http://localhost:8000`.  
+   Documentación interactiva: `http://localhost:8000/docs`.
+
+### Opción B — Sin Docker (entorno virtual)
+
+1. **Crear y activar un entorno virtual**
+   ```bash
+   python -m venv .venv
+   .\.venv\Scripts\activate        # Windows
+   # source .venv/bin/activate     # macOS/Linux
    ```
 
-6. **Ejecutar la API**
+2. **Instalar dependencias**
+   ```bash
+   pip install -r requirements.txt
+   # Solo para desarrollo (hot-reload, tests):
+   pip install -r requirements-dev.txt
+   ```
+
+3. **Crear archivo `.env`** (igual que Opción A, paso 2)
+
+4. **Ejecutar la API**
    ```bash
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
-   La documentación interactiva estará disponible en `http://localhost:8000/docs`.
 
 ---
 
-## 🔑 Variables de entorno necesarias (`.env.example`)
+## 🔑 Variables de entorno
 
-```dotenv
-# ---------------------------------------------------
-# FastAPI / Uvicorn
-# ---------------------------------------------------
-HOST=0.0.0.0
-PORT=8000
-DEBUG=True
+Copia `.env.example` como `.env` y rellena los valores. Consulta el propio `.env.example` para la descripción detallada de cada variable.
 
-# ---------------------------------------------------
-# PostgreSQL (Supabase) 
-# ---------------------------------------------------
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
-POSTGRES_DB=recuerdago
-POSTGRES_HOST=your_supabase_host
-POSTGRES_PORT=5432
+### Obligatorias — la app NO arranca sin estas
 
-# ---------------------------------------------------
-# Supabase (Auth + Storage)
-# ---------------------------------------------------
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your_anon_or_service_key
+| Variable      | Descripción                                              |
+|---------------|----------------------------------------------------------|
+| `DB_USER`     | Usuario de la base de datos (ej: `postgres.xxxxxxxxxxx`) |
+| `DB_PASSWORD` | Contraseña de la base de datos                           |
+| `DB_HOST`     | Host de Supabase Transaction Pooler                      |
+| `SECRET_KEY`  | Clave para firmar JWTs. Generar: `openssl rand -hex 32`  |
 
-# ---------------------------------------------------
-# Redis (Cache / PubSub)
-# ---------------------------------------------------
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-REDIS_PASSWORD=optional_password
+### Opcionales — tienen valores por defecto funcionales
 
-# ---------------------------------------------------
-# Seguridad / JWT
-# ---------------------------------------------------
-JWT_SECRET_KEY=your_secret_key
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-
-# ---------------------------------------------------
-# Render (solo para CI/CD, opcional)
-# ---------------------------------------------------
-RENDER_SERVICE_ID=your_render_service_id
-```
-
-Guarda este archivo como `.env` antes de iniciar la aplicación.
+| Variable                        | Default                              | Descripción                               |
+|---------------------------------|--------------------------------------|-------------------------------------------|
+| `APP_NAME`                      | `"Mi API Backend"`                   | Nombre visible en `/docs` y `/health`     |
+| `DEBUG`                         | `False`                              | Modo debug de FastAPI                     |
+| `DB_PORT`                       | `6543`                               | Puerto de Supabase Transaction Pooler     |
+| `DB_NAME`                       | `postgres`                           | Nombre de la base de datos                |
+| `ALGORITHM`                     | `HS256`                              | Algoritmo de firma JWT                    |
+| `ACCESS_TOKEN_EXPIRE_MINUTES`   | `30`                                 | Duración del access token en minutos      |
+| `API_BASE_URL`                  | `http://localhost:8000`              | URL base de la API                        |
+| `ALLOWED_ORIGINS`               | `http://localhost:3000,...`          | Orígenes CORS permitidos (coma-separated) |
+| `GEOFENCE_MATCH_WINDOW_SECONDS` | `30`                                 | Ventana de coincidencia para geofencing   |
+| `FIREBASE_CREDENTIALS`          | _(vacío)_                            | JSON de credenciales Firebase (una línea). Sin esto, FCM no funciona pero la app arranca. |
 
 ---
 
 ## 🌐 Despliegue en Render
 
-1. **Crear una nueva Web Service** en Render y conectar tu repositorio de GitHub.
-2. **Configurar el entorno**:
-   - En la sección *Environment*, añade todas las variables definidas en `.env.example`.
-   - Selecciona *Python* como runtime y especifica la versión (≥3.11).
-3. **Build Command** (comando de construcción):
+1. **Crear un nuevo Web Service** en Render y conectar el repositorio de GitHub.
+2. **Configurar entorno** en *Environment*:
+   - Añadir las 4 variables obligatorias y cualquier opcional que necesites.
+   - Para `FIREBASE_CREDENTIALS`: pegar el JSON completo en una sola línea directamente en el campo de Render (no usar archivo).
+3. **Build Command**:
    ```bash
-   pip install -r requirements.txt && alembic upgrade head
+   pip install -r requirements.txt
    ```
-4. **Start Command** (comando de arranque):
+4. **Start Command**:
    ```bash
    uvicorn app.main:app --host 0.0.0.0 --port $PORT
    ```
-5. **Persistencia**: Render provee una base de datos PostgreSQL y Redis gestionados; si utilizas Supabase, simplemente mantiene las variables de conexión.
-6. **Deploy automático**: Cada push a la rama `main` disparará una nueva compilación y despliegue.
+5. **Deploy automático**: cada push a `main` dispara un nuevo deploy.
+
+> **Alternativa con Docker en Render:** Render detecta el `Dockerfile` automáticamente si seleccionas *Docker* como runtime. El multi-stage build producirá una imagen más pequeña y segura.
 
 ---
 
-## 📂 Estructura de carpetas
+## 📂 Estructura del proyecto
 
 ```
-recuerdago-api/
-├─ app/                     # Código fuente de la API
-│   ├─ api/                 # Routers (endpoints) organizados por dominio
-│   │   ├─ v1/              # Versión 1 de la API
-│   │   │   ├─ usuarios.py
-│   │   │   ├─ auth.py
-│   │   │   └─ ...
-│   ├─ core/                # Configuración y utilidades generales
-│   │   ├─ config.py        # Carga de .env y settings de Pydantic
-│   │   ├─ security.py      # JWT, hashing, etc.
-│   │   └─ ...
-│   ├─ db/                  # Gestión de base de datos
-│   │   ├─ models/          # Modelos SQLAlchemy
-│   │   ├─ schemas/         # Schemas Pydantic
-│   │   ├─ session.py       # Session y engine
-│   │   └─ migrations/      # Alembic migrations
-│   ├─ services/            # Lógica de negocio (p.ej., envío de correos)
-│   └─ main.py              # Punto de entrada de FastAPI
-├─ tests/                   # Tests unitarios y de integración
-│   └─ ...
-├─ .env.example            # Plantilla de variables de entorno
-├─ requirements.txt         # Dependencias Python
-├─ alembic.ini              # Configuración de Alembic
-├─ Dockerfile               # (opcional) Imagen Docker para Render
-├─ docker-compose.yml       # (opcional) Levantar PostgreSQL + Redis localmente
-└─ README.md                # <-- Este archivo
+backend-rutai/
+├── app/
+│   ├── database/
+│   │   ├── config.py              # Settings (Pydantic) — carga .env
+│   │   ├── database.py            # Engine y SessionLocal de SQLAlchemy
+│   │   └── seed.py                # Datos iniciales (roles, admin)
+│   ├── usuarios/                  # Auth, JWT, modelos de usuario
+│   ├── login/                     # Endpoints de login
+│   ├── ubicaciones/               # Gestión de ubicaciones e historial
+│   ├── grupos/                    # Grupos de usuarios + WebSockets
+│   ├── seguridad/                 # Zonas de seguridad / riesgo
+│   ├── tracking/                  # Tracking en tiempo real
+│   ├── recordatorios/             # Recordatorios con APScheduler
+│   ├── services/                  # FCM, cron jobs
+│   ├── experimento/               # Métricas de geofencing
+│   ├── mediciones/                # Latencia y métricas de rendimiento
+│   ├── middleware/                # Activity tracking
+│   └── main.py                    # Punto de entrada FastAPI
+├── .env.example                   # Plantilla de variables de entorno
+├── requirements.txt               # Dependencias de producción
+├── requirements-dev.txt           # Dependencias de desarrollo (watchfiles, pytest)
+├── Dockerfile                     # Multi-stage build (builder + runtime)
+├── docker-compose.yml             # Configuración local con healthcheck y límites
+├── .dockerignore                  # Excluye .env, .git, __pycache__, etc.
+└── README.md                      # Este archivo
 ```
 
 ---
 
-> **¡Listo!** Ahora tienes toda la información necesaria para desarrollar, probar y desplegar `rutai`.
+## 🏥 Health Check
+
+La API expone un endpoint de salud que verifica la conectividad con la base de datos:
+
+```
+GET /health
+```
+
+Respuesta esperada:
+```json
+{
+  "status": "healthy",
+  "app": "RutAI Backend",
+  "version": "1.0.0",
+  "database": "connected"
+}
+```
+
+---
+
+> **¡Listo!** Con Docker, solo necesitas las 4 variables obligatorias en tu `.env` y la API levanta completa.
