@@ -5,7 +5,7 @@ resend.api_key = settings.resend_api_key
 
 
 def enviar_email_recuperacion(email_destino: str, token: str):
-    reset_url = f"{settings.frontend_url.rstrip('/')}/reset-password.html?token={token}"
+    reset_url = f"{settings.frontend_url.rstrip('/static')}/login/reset-password?token={token}"
     
     try:
         params = {
