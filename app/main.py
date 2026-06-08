@@ -1,9 +1,11 @@
 from fastapi import FastAPI, status  # 👈 Agrega status aquí
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.staticfiles import StaticFiles
 from .database.config import settings
 from .database.database import *
 from .usuarios.models import *
+from .usuarios.recuperacion.models import *
 from .ubicaciones.models import *
 from .ubicaciones.ubicaciones_historial.models import *
 from .services.models import *
@@ -27,6 +29,9 @@ app = FastAPI(
     version="1.0.0",
     debug=settings.debug
 )
+
+# Montar archivos estáticos para la página de recuperación de contraseña
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Configurar CORS
 app.add_middleware(

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, Form, HTTPException
 from sqlalchemy.orm import Session
 from ..database.database import get_db
@@ -5,7 +7,21 @@ from ..usuarios.security import *
 from ..usuarios.models import Usuario
 from datetime import datetime, timedelta
 from fastapi.responses import JSONResponse
-from ..usuarios.sesiones.crud import crear_sesion, obtener_sesion, inhabilitar_sesion
+from ..usuarios.sesiones.crud import (
+    crear_sesion,
+    obtener_sesion,
+    inhabilitar_sesion,
+    inhabilitar_sesiones_usuario,
+)
+from ..usuarios.recuperacion.crud import (
+    crear_token_recuperacion,
+    obtener_token_valido,
+    marcar_token_usado,
+)
+from ..usuarios.recuperacion.email_service import enviar_email_recuperacion
+from .schemas import ForgotPasswordRequest, ResetPasswordRequest
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/login", tags=["Login"])
 
@@ -40,6 +56,47 @@ def login(
         "token_type": "bearer",
         "sesion_id": str(nueva_sesion.id)
     })
+
+# 🔹 Forgot password
+@router.post("/forgot-password")
+def forgot_password(
+    request: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    usuario = db.query(Usuario).filter(Usuario.usuario == request.correo, Usuario.activo == True).first()
+    if usuario:
+        try:
+            token_obj = crear_token_recuperacion(db, usuario.id)
+            enviar_email_recuperacion(usuario.usuario, token_obj.token)
+        except Exception as e:
+            logger.warning(f"No se pudo enviar email de recuperación: {e}")
+    return {"mensaje": "Si el correo existe, recibirás instrucciones en breve."}
+
+# 🔹 Reset password
+@router.post("/reset-password")
+def reset_password(
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    if len(request.nueva_contrasenia or "") < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="La nueva contraseña debe tener al menos 8 caracteres"
+        )
+
+    token_obj = obtener_token_valido(db, request.token)
+    if not token_obj:
+        raise HTTPException(status_code=400, detail="Token inválido o expirado")
+
+    usuario = db.query(Usuario).filter(Usuario.id == token_obj.usuario_id, Usuario.activo == True).first()
+    if not usuario:
+        raise HTTPException(status_code=400, detail="Token inválido o expirado")
+
+    usuario.contrasenia = get_password_hash(request.nueva_contrasenia)
+    marcar_token_usado(db, token_obj)
+    inhabilitar_sesiones_usuario(db, usuario.id)
+
+    return {"mensaje": "Contraseña actualizada correctamente"}
 
 # 🔹 Refresh token
 @router.post("/refresh")

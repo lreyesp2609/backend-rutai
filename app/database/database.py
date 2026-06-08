@@ -54,6 +54,10 @@ def test_connection():
             time.sleep(2)
     return False
 
+# Importar modelos adicionales para que create_tables los registre
+from ..usuarios.recuperacion.models import TokenRecuperacion
+
+
 def create_tables():
     try:
         Base.metadata.create_all(bind=engine)

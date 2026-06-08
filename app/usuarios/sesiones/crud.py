@@ -50,3 +50,11 @@ def obtener_sesion(db: Session, refresh_token: str):
         db.commit()
         return None
     return sesion
+
+
+def inhabilitar_sesiones_usuario(db: Session, usuario_id: int):
+    db.query(SesionAppUsuario).filter(
+        SesionAppUsuario.usuario_id == usuario_id,
+        SesionAppUsuario.activo == True
+    ).update({"activo": False}, synchronize_session=False)
+    db.commit()
