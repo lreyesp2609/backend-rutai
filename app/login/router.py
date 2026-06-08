@@ -3,10 +3,11 @@ import logging
 from fastapi import APIRouter, Depends, Form, HTTPException
 from sqlalchemy.orm import Session
 from ..database.database import get_db
+from ..database.config import settings
 from ..usuarios.security import *
 from ..usuarios.models import Usuario
 from datetime import datetime, timedelta
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from ..usuarios.sesiones.crud import (
     crear_sesion,
     obtener_sesion,
@@ -71,6 +72,21 @@ def forgot_password(
         except Exception as e:
             logger.warning(f"No se pudo enviar email de recuperación: {e}")
     return {"mensaje": "Si el correo existe, recibirás instrucciones en breve."}
+
+@router.get("/reset-password", response_class=HTMLResponse)
+async def reset_password_page():
+    with open("static/reset-password.html", "r", encoding="utf-8") as f:
+        html = f.read()
+    
+    api_base = settings.frontend_url
+    if api_base.endswith("/static"):
+        api_base = api_base[:-7]
+    
+    html = html.replace(
+        'const API_BASE = "PLACEHOLDER_API_BASE"',
+        f'const API_BASE = "{api_base}"'
+    )
+    return HTMLResponse(content=html)
 
 # 🔹 Reset password
 @router.post("/reset-password")
