@@ -1,7 +1,7 @@
 import secrets
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from ..models import TokenRecuperacion
+from .models import TokenRecuperacion
 
 
 def crear_token_recuperacion(db: Session, usuario_id: int):
