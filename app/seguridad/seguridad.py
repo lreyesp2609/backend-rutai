@@ -224,6 +224,9 @@ def validar_rutas_seguridad(
         rutas_validadas = []
 
         for ruta in request.rutas:
+            logger.info(
+                f"Ruta recibida: tipo={ruta.tipo} distance={ruta.distance} duration={ruta.duration}"
+            )
             puntos_ruta = validador._decode_polyline(ruta.geometry)
             
             # Validar contra zonas PROPIAS

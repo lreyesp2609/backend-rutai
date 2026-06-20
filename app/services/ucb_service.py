@@ -196,14 +196,16 @@ class UCBService:
             # Tiempo promedio solo para rutas FINALIZADAS (no canceladas)
             tiempo_por_tipo = {}
             for ruta in rutas:
-                if ruta.estado_ruta_id == 2:  # Solo rutas FINALIZADAS
-                    # Calcular duración real en segundos
-                    duracion_real = (ruta.fecha_fin - ruta.fecha_inicio).total_seconds()
-                    
-                    if ruta.tipo_ruta_usado not in tiempo_por_tipo:
-                        tiempo_por_tipo[ruta.tipo_ruta_usado] = []
-                    tiempo_por_tipo[ruta.tipo_ruta_usado].append(duracion_real)
-            
+                if ruta.estado_ruta_id == 2 and ruta.fecha_inicio and ruta.fecha_fin:  # Solo rutas FINALIZADAS
+                    inicio = ruta.fecha_inicio.replace(tzinfo=None) if ruta.fecha_inicio.tzinfo else ruta.fecha_inicio
+                    fin = ruta.fecha_fin.replace(tzinfo=None) if ruta.fecha_fin.tzinfo else ruta.fecha_fin
+                    duracion_real = (fin - inicio).total_seconds()
+
+                    if duracion_real > 0 and duracion_real < 86400:
+                        if ruta.tipo_ruta_usado not in tiempo_por_tipo:
+                            tiempo_por_tipo[ruta.tipo_ruta_usado] = []
+                        tiempo_por_tipo[ruta.tipo_ruta_usado].append(duracion_real)
+
             tiempo_promedio_por_tipo = {
                 tipo: round(sum(lista) / len(lista), 2) if lista else 0
                 for tipo, lista in tiempo_por_tipo.items()

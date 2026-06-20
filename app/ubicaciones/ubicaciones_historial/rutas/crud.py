@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from .models import RutaUsuario, SegmentoRuta, PasoRuta
@@ -7,11 +7,19 @@ from ..models import EstadoUbicacion, EstadoUbicacionUsuario
 from fastapi import HTTPException
 from typing import List, Optional
 from ..rutas.models import Transporte
+from dateutil import parser as dateparser
 
 from ....services.ucb_service import UCBService
 from ....services.detector_desobediencia import DetectorDesobedienciaService, convertir_puntos_gps_a_geometria
 import logging
 logger = logging.getLogger(__name__)
+
+def _normalize_to_utc_naive(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
 
 class CRUDRutas:
 
@@ -113,8 +121,8 @@ class CRUDRutas:
                 distancia_total=ruta.distancia_total,
                 duracion_total=ruta.duracion_total,
                 geometria=ruta.geometria,
-                fecha_inicio=ruta.fecha_inicio,
-                fecha_fin=ruta.fecha_fin,
+                fecha_inicio=_normalize_to_utc_naive(ruta.fecha_inicio),
+                fecha_fin=_normalize_to_utc_naive(ruta.fecha_fin),
                 tipo_ruta_usado=tipo_ruta_usado,
                 estado_ruta_id=estado_ruta_id,
                 estado_usuario_id=estado_usuario_id  # 🔥 AQUÍ SE GUARDA LA REFERENCIA
@@ -186,11 +194,15 @@ class CRUDRutas:
             raise HTTPException(status_code=500, detail="Estado 'FINALIZADA' no existe")
 
         # 3. ACTUALIZAR FECHA FIN
-        import dateutil.parser
         try:
-            ruta.fecha_fin = dateutil.parser.parse(fecha_fin)
+            parsed = dateparser.parse(fecha_fin)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Formato de fecha inválido: {fecha_fin}")
+
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+
+        ruta.fecha_fin = parsed
         
         ruta.estado_ruta_id = estado_finalizada.id
         db.commit()
@@ -324,13 +336,15 @@ class CRUDRutas:
             raise HTTPException(status_code=500, detail="Estado 'CANCELADA' no existe")
 
         # Actualizar la ruta con la fecha recibida
-        import dateutil.parser
         try:
-            # Parsea fechas con timezone automáticamente
-            ruta.fecha_fin = dateutil.parser.parse(fecha_fin)
+            parsed = dateparser.parse(fecha_fin)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Formato de fecha inválido: {fecha_fin}")
-            
+
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+
+        ruta.fecha_fin = parsed
         ruta.estado_ruta_id = estado_cancelada.id
         db.commit()
         db.refresh(ruta)
