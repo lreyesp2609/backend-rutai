@@ -16,11 +16,9 @@ from ..usuarios.sesiones.crud import (
     inhabilitar_sesiones_usuario,
 )
 from ..usuarios.recuperacion.crud import (
-    crear_token_recuperacion,
     obtener_token_valido,
     marcar_token_usado,
 )
-from ..usuarios.recuperacion.email_service import enviar_email_recuperacion
 from .schemas import ForgotPasswordRequest, ResetPasswordRequest
 
 logger = logging.getLogger(__name__)
