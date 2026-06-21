@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, Form, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from ..database.database import get_db
 from ..database.config import settings
@@ -64,14 +65,40 @@ def forgot_password(
     request: ForgotPasswordRequest,
     db: Session = Depends(get_db)
 ):
-    usuario = db.query(Usuario).filter(Usuario.usuario == request.correo, Usuario.activo == True).first()
-    if usuario:
-        try:
-            token_obj = crear_token_recuperacion(db, usuario.id)
-            enviar_email_recuperacion(usuario.usuario, token_obj.token)
-        except Exception as e:
-            logger.warning(f"No se pudo enviar email de recuperación: {e}")
-    return {"mensaje": "Si el correo existe, recibirás instrucciones en breve."}
+    return {
+        "mensaje": "Para restablecer tu contraseña, usa el endpoint /login/reset-directo"
+    }
+
+class ResetDirectoRequest(BaseModel):
+    correo: str
+    nueva_contrasenia: str
+
+@router.post("/reset-directo")
+def reset_directo(
+    request: ResetDirectoRequest,
+    db: Session = Depends(get_db)
+):
+    if len(request.nueva_contrasenia) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="La contraseña debe tener al menos 8 caracteres"
+        )
+    
+    usuario = db.query(Usuario).filter(
+        Usuario.usuario == request.correo,
+        Usuario.activo == True
+    ).first()
+    
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="USUARIO_NO_ENCONTRADO"
+        )
+    
+    usuario.contrasenia = get_password_hash(request.nueva_contrasenia)
+    db.commit()
+    
+    return {"mensaje": "Contraseña actualizada correctamente"}
 
 @router.get("/reset-password", response_class=HTMLResponse)
 async def reset_password_page():
