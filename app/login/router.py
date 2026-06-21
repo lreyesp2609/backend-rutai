@@ -8,18 +8,14 @@ from ..database.config import settings
 from ..usuarios.security import *
 from ..usuarios.models import Usuario
 from datetime import datetime, timedelta
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse
 from ..usuarios.sesiones.crud import (
     crear_sesion,
     obtener_sesion,
     inhabilitar_sesion,
     inhabilitar_sesiones_usuario,
 )
-from ..usuarios.recuperacion.crud import (
-    obtener_token_valido,
-    marcar_token_usado,
-)
-from .schemas import ForgotPasswordRequest, ResetPasswordRequest
+from .schemas import ForgotPasswordRequest
 
 logger = logging.getLogger(__name__)
 
@@ -98,46 +94,7 @@ def reset_directo(
     
     return {"mensaje": "Contraseña actualizada correctamente"}
 
-@router.get("/reset-password", response_class=HTMLResponse)
-async def reset_password_page():
-    with open("static/reset-password.html", "r", encoding="utf-8") as f:
-        html = f.read()
-    
-    api_base = settings.frontend_url
-    if api_base.endswith("/static"):
-        api_base = api_base[:-7]
-    
-    html = html.replace(
-        'const API_BASE = "PLACEHOLDER_API_BASE"',
-        f'const API_BASE = "{api_base}"'
-    )
-    return HTMLResponse(content=html)
 
-# 🔹 Reset password
-@router.post("/reset-password")
-def reset_password(
-    request: ResetPasswordRequest,
-    db: Session = Depends(get_db)
-):
-    if len(request.nueva_contrasenia or "") < 8:
-        raise HTTPException(
-            status_code=400,
-            detail="La nueva contraseña debe tener al menos 8 caracteres"
-        )
-
-    token_obj = obtener_token_valido(db, request.token)
-    if not token_obj:
-        raise HTTPException(status_code=400, detail="Token inválido o expirado")
-
-    usuario = db.query(Usuario).filter(Usuario.id == token_obj.usuario_id, Usuario.activo == True).first()
-    if not usuario:
-        raise HTTPException(status_code=400, detail="Token inválido o expirado")
-
-    usuario.contrasenia = get_password_hash(request.nueva_contrasenia)
-    marcar_token_usado(db, token_obj)
-    inhabilitar_sesiones_usuario(db, usuario.id)
-
-    return {"mensaje": "Contraseña actualizada correctamente"}
 
 # 🔹 Refresh token
 @router.post("/refresh")

@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 def enviar_email_recuperacion(email_destino: str, token: str):
-    reset_url = f"{settings.frontend_url.rstrip('/static')}/login/reset-password?token={token}"
+    reset_url = f"{settings.api_base_url.rstrip('/static')}/login/reset-password?token={token}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Recuperación de contraseña - RutAI"
