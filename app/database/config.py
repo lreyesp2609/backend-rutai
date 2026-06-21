@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     # API Configuration
     api_base_url: str = "http://localhost:8000"
     frontend_url: str = "http://localhost:3000"
-    resend_api_key: str
-    
+    resend_api_key: str = ""
+
     # CORS
     allowed_origins: List[str] = [
         "http://localhost:3000",
