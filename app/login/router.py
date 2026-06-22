@@ -2,6 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, Form, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from ..database.database import get_db
 from ..database.config import settings
@@ -164,3 +165,15 @@ def decodificar(
         "rol": usuario.rol.nombre,
         "correo": usuario.usuario,
     })
+
+
+@router.get("/debug/db-info")
+def db_info(db: Session = Depends(get_db)):
+    result = db.execute(text("SELECT current_database(), current_user, inet_server_addr()"))
+    row = result.fetchone()
+    return {
+        "database": row[0],
+        "user": row[1],
+        "host": row[2]
+    }
+
