@@ -15,7 +15,7 @@ engine = create_engine(
     poolclass=NullPool,
     echo=settings.debug,
     connect_args={
-        "sslmode": "require",
+        "sslmode": "disable",
         "connect_timeout": 10,
         "keepalives": 1,
         "keepalives_idle": 30,
