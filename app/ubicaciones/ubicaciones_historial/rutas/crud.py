@@ -202,6 +202,18 @@ class CRUDRutas:
         if parsed.tzinfo is not None:
             parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
 
+        # TODO: fix en cliente Android para enviar UTC
+        # Autocorrect: el cliente envía fecha_fin en hora local (UTC-5) sin tzinfo,
+        # mientras que fecha_inicio se guarda en UTC naive. Si fecha_fin < fecha_inicio,
+        # se asume un desfase de 5 horas (Ecuador UTC-5) y se corrige sumándolas.
+        from datetime import timedelta
+        if ruta.fecha_inicio and parsed < ruta.fecha_inicio:
+            logger.warning(
+                f"fecha_fin ({parsed}) < fecha_inicio ({ruta.fecha_inicio}) en ruta {ruta_id}. "
+                f"Aplicando corrección de zona horaria UTC-5 → UTC."
+            )
+            parsed = parsed + timedelta(hours=5)
+
         ruta.fecha_fin = parsed
         
         ruta.estado_ruta_id = estado_finalizada.id
@@ -343,6 +355,18 @@ class CRUDRutas:
 
         if parsed.tzinfo is not None:
             parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+
+        # TODO: fix en cliente Android para enviar UTC
+        # Autocorrect: el cliente envía fecha_fin en hora local (UTC-5) sin tzinfo,
+        # mientras que fecha_inicio se guarda en UTC naive. Si fecha_fin < fecha_inicio,
+        # se asume un desfase de 5 horas (Ecuador UTC-5) y se corrige sumándolas.
+        from datetime import timedelta
+        if ruta.fecha_inicio and parsed < ruta.fecha_inicio:
+            logger.warning(
+                f"fecha_fin ({parsed}) < fecha_inicio ({ruta.fecha_inicio}) en ruta {ruta_id}. "
+                f"Aplicando corrección de zona horaria UTC-5 → UTC."
+            )
+            parsed = parsed + timedelta(hours=5)
 
         ruta.fecha_fin = parsed
         ruta.estado_ruta_id = estado_cancelada.id
