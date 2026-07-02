@@ -1,28 +1,21 @@
-# docker-compose.yml — RutAI Backend
-# Nota: el campo `version:` fue eliminado (obsoleto desde Compose V2)
+# docker-compose.yml — RutAI Backend + Nginx
 
 services:
   api:
     build:
       context: .
       dockerfile: Dockerfile
-      target: runtime          # Apunta al stage final del multi-stage build
+      target: runtime
     image: rutai-backend:local
     container_name: rutai_api
     restart: unless-stopped
 
-    # ── Puertos ──────────────────────────────────────────────
     ports:
       - "8000:8000"
 
-    # ── Variables de entorno ─────────────────────────────────
-    # Las variables sensibles se inyectan desde el archivo .env
-    # que NO se copia en la imagen (está en .dockerignore).
-    # En producción (Render, K8s), inyectar via secrets del orquestador.
     env_file:
       - .env
 
-    # ── Healthcheck ──────────────────────────────────────────
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -31,7 +24,6 @@ services:
       retries: 3
       start_period: 15s
 
-    # ── Límites de recursos ──────────────────────────────────
     deploy:
       resources:
         limits:
@@ -41,11 +33,40 @@ services:
           cpus: "0.25"
           memory: 128M
 
-    # ── Red aislada ──────────────────────────────────────────
     networks:
       - rutai_net
 
-    # ── Logging ──────────────────────────────────────────────
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: rutai-nginx:local
+    container_name: rutai_nginx
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      # Certificados SSL (montar ruta real del servidor)
+      - /ssl:/ssl:ro
+      # Archivos estáticos
+      - ./static:/var/www/static:ro
+
+    depends_on:
+      api:
+        condition: service_healthy
+
+    networks:
+      - rutai_net
+
     logging:
       driver: "json-file"
       options:

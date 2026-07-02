@@ -37,6 +37,7 @@ WORKDIR /app
 
 # Copiar SÓLO el código fuente (no .env, no docs, no git)
 COPY app/ ./app/
+COPY static/ ./static/
 
 # Cambiar propiedad al usuario de la app
 RUN chown -R appuser:appgroup /app
