@@ -91,6 +91,7 @@ def finalizar_ruta_endpoint(
 def cancelar_ruta(
     ruta_id: int, 
     fecha_fin: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
 ):
-    return crud_rutas.cancelar_ruta(db, ruta_id, fecha_fin)
+    return crud_rutas.cancelar_ruta(db, ruta_id, fecha_fin, usuario_id=current_user.id)

@@ -695,66 +695,49 @@ def obtener_zonas_sugeridas(
     🌍 Obtiene zonas peligrosas PÚBLICAS cerca de una ubicación
     
     - Busca zonas de otros usuarios en un radio determinado
-    - Excluye las zonas que el usuario YA tiene guardadas
+    - Excluye las zonas que el usuario YA tiene guardadas (por nombre)
     - Filtra por distancia al centro de cada zona
     
     **Caso de uso:** Usuario de Guayaquil visita Quevedo
     """
     try:
         from .geometria import calcular_distancia_haversine
+        from sqlalchemy import exists
+        from sqlalchemy.orm import aliased
         
-        # 1. Obtener TODAS las zonas activas de OTROS usuarios
-        zonas_publicas = db.query(ZonaPeligrosaUsuario).filter(
-            ZonaPeligrosaUsuario.usuario_id != current_user.id,
-            ZonaPeligrosaUsuario.activa == True
-        ).all()
-        
-        logger.info(f"📊 Total zonas públicas en BD: {len(zonas_publicas)}")
-        
-        # 2. Obtener zonas que el usuario YA tiene
-        zonas_propias = db.query(ZonaPeligrosaUsuario).filter(
+        # 1. NOT EXISTS correlated: excluye zonas cuyo nombre ya tiene el usuario
+        #    Usamos NOT EXISTS en vez de NOT IN porque NOT IN falla silenciosamente
+        #    si la subquery contiene algún NULL (devuelve 0 resultados).
+        Zo = aliased(ZonaPeligrosaUsuario)
+        subq_existe = db.query(ZonaPeligrosaUsuario.id).filter(
             ZonaPeligrosaUsuario.usuario_id == current_user.id,
-            ZonaPeligrosaUsuario.activa == True
+            ZonaPeligrosaUsuario.activa == True,
+            ZonaPeligrosaUsuario.nombre == Zo.nombre
+        ).exists()
+        
+        # 2. Obtener zonas activas de OTROS usuarios, excluyendo las ya adoptadas (mismo nombre)
+        zonas_publicas = db.query(Zo).filter(
+            Zo.usuario_id != current_user.id,
+            Zo.activa == True,
+            ~subq_existe
         ).all()
         
-        # Crear huellas únicas para detectar zonas adoptadas (mismo nombre + coordenadas)
-        def crear_huella_zona(zona):
-            if not zona.poligono:
-                return None
-            centro = zona.poligono[0]
-            lat = round(centro['lat'], 5)
-            lon = round(centro['lon'], 5)
-            return f"{zona.nombre.lower().strip()}:{lat}:{lon}"
-            
-        huellas_propias = {
-            crear_huella_zona(z) for z in zonas_propias 
-            if crear_huella_zona(z) is not None
-        }
+        logger.info(f"📊 Total zonas públicas (excluyendo adoptadas): {len(zonas_publicas)}")
         
-        logger.info(f"🔒 Usuario tiene {len(huellas_propias)} zonas propias (huellas)")
-        
-        # 3. Filtrar zonas cercanas
+        # 3. Filtrar por distancia
         zonas_cercanas = []
         radio_metros = radio_km * 1000
         
         for zona in zonas_publicas:
-            # Saltar si la huella de la zona pública ya la tiene el usuario (zona adoptada)
-            huella_publica = crear_huella_zona(zona)
-            if huella_publica and huella_publica in huellas_propias:
-                continue
-            
-            # Obtener centro de la zona
             centro = zona.poligono[0] if zona.poligono else None
             if not centro:
                 continue
             
-            # Calcular distancia
             distancia = calcular_distancia_haversine(
                 lat, lon,
                 centro['lat'], centro['lon']
             )
             
-            # ¿Está dentro del radio?
             if distancia <= radio_metros:
                 zonas_cercanas.append(zona)
         
@@ -801,7 +784,7 @@ def adoptar_zona_sugerida(
         # 2. Verificar que NO sea del usuario (seguridad)
         if zona_original.usuario_id == current_user.id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="ZONE_ALREADY_OWNED"
             )
         
@@ -814,7 +797,7 @@ def adoptar_zona_sugerida(
         
         if existe:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="ZONE_NAME_ALREADY_EXISTS",
                 headers={"zone_name": zona_original.nombre}
             )

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     db_port: int = 6543
     db_name: str = "postgres"
     
+    firebase_credentials: str
+
+    
     # Seguridad
     secret_key: str
     algorithm: str = "HS256"

@@ -23,7 +23,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from jose import jwt, JWTError
 from datetime import datetime, timezone
 from sqlalchemy import update
-import os
+from ..database.config import settings
 import time
 import logging
 
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 ACTIVITY_THROTTLE_SECONDS = 5 * 60  # 300 segundos
 
 # JWT config (misma que en security.py)
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
 
 # Cache en memoria: { user_id: timestamp_del_ultimo_update }

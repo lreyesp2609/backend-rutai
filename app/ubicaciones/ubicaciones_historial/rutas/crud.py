@@ -331,13 +331,19 @@ class CRUDRutas:
         
         return respuesta
 
-    def cancelar_ruta(self, db: Session, ruta_id: int, fecha_fin: str) -> RutaUsuario:
+    def cancelar_ruta(self, db: Session, ruta_id: int, fecha_fin: str, usuario_id: int = None) -> RutaUsuario:
         """
         🔥 ARQUITECTURA FINAL: Actualiza TANTO rutas_usuario COMO estados_ubicacion_usuario
         """
         ruta = db.query(RutaUsuario).filter(RutaUsuario.id == ruta_id).first()
         if not ruta:
             raise HTTPException(status_code=404, detail="Ruta no encontrada")
+
+        if usuario_id is not None and ruta.usuario_id != usuario_id:
+            raise HTTPException(
+                status_code=403,
+                detail="No autorizado para cancelar esta ruta"
+            )
 
         # Buscar estado CANCELADA
         estado_cancelada = db.query(EstadoUbicacion).filter(
