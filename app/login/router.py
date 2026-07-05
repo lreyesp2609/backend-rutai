@@ -90,6 +90,12 @@ def reset_directo(
             detail="USUARIO_NO_ENCONTRADO"
         )
     
+    if verify_password(request.nueva_contrasenia, usuario.contrasenia):
+        raise HTTPException(
+            status_code=400,
+            detail="La nueva contraseña no puede ser igual a la contraseña actual"
+        )
+    
     usuario.contrasenia = get_password_hash(request.nueva_contrasenia)
     db.commit()
     

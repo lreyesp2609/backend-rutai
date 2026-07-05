@@ -49,6 +49,35 @@ def marcar_zona_peligrosa(
                 detail="INVALID_COORDINATES"
             )
         
+        # 🔍 Validación de idempotencia: mismo nombre
+        existe_mismo_nombre = db.query(ZonaPeligrosaUsuario).filter(
+            ZonaPeligrosaUsuario.usuario_id == current_user.id,
+            ZonaPeligrosaUsuario.nombre == zona.nombre,
+            ZonaPeligrosaUsuario.activa == True
+        ).first()
+        if existe_mismo_nombre:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya tienes una zona activa con ese nombre"
+            )
+        
+        # 🔍 Validación de idempotencia: coordenadas muy cercanas (< 30m)
+        zonas_usuario = db.query(ZonaPeligrosaUsuario).filter(
+            ZonaPeligrosaUsuario.usuario_id == current_user.id,
+            ZonaPeligrosaUsuario.activa == True
+        ).all()
+        for zona_existente in zonas_usuario:
+            centro_existente = zona_existente.poligono[0]
+            distancia = calcular_distancia_haversine(
+                zona.lat, zona.lon,
+                centro_existente['lat'], centro_existente['lon']
+            )
+            if distancia < 30:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Ya existe una zona muy cerca de esta ubicación"
+                )
+        
         # 🔥 GUARDAR EL CENTRO ORIGINAL COMO PRIMER PUNTO
         poligono = [
             {"lat": zona.lat, "lon": zona.lon}  # ✅ Centro primero
@@ -339,7 +368,37 @@ def validar_rutas_seguridad(
             
             rutas_validadas.append(ruta_validada)
         
-        # 6️⃣ Determinar mejor ruta y advertencias
+        # 6️⃣ Re-etiquetar rutas según datos reales de duración/distancia
+        # (corrige inconsistencias del motor de ruteo: ej. "fastest" con duración mayor a "shortest")
+        if rutas_validadas:
+            # Encontrar ruta con menor duración → "fastest" (Más rápida)
+            rutas_con_duracion = [(i, rv.duracion) for i, rv in enumerate(rutas_validadas) if rv.duracion is not None]
+            idx_mas_rapida = min(rutas_con_duracion, key=lambda x: x[1])[0] if rutas_con_duracion else None
+
+            # Encontrar ruta con menor distancia → "shortest" (Más corta)
+            rutas_con_distancia = [(i, rv.distancia) for i, rv in enumerate(rutas_validadas) if rv.distancia is not None]
+            idx_mas_corta = min(rutas_con_distancia, key=lambda x: x[1])[0] if rutas_con_distancia else None
+
+            for i, rv in enumerate(rutas_validadas):
+                if i == idx_mas_rapida and i == idx_mas_corta:
+                    rv.tipo = "fastest"
+                elif i == idx_mas_rapida:
+                    rv.tipo = "fastest"
+                elif i == idx_mas_corta:
+                    rv.tipo = "shortest"
+
+        # 7️⃣ Validación post-relabeling: la ruta "fastest" debe tener la menor duración
+        if idx_mas_rapida is not None:
+            ruta_rapida = rutas_validadas[idx_mas_rapida]
+            for j, rv in enumerate(rutas_validadas):
+                if j != idx_mas_rapida and rv.duracion is not None and ruta_rapida.duracion is not None:
+                    if ruta_rapida.duracion > rv.duracion:
+                        logger.warning(
+                            f"INVARIANTE VIOLADO: ruta 'fastest' (idx={idx_mas_rapida}, duracion={ruta_rapida.duracion}) "
+                            f"tiene mayor duración que la ruta idx={j} (duracion={rv.duracion})"
+                        )
+
+        # 8️⃣ Determinar mejor ruta y advertencias
         todas_seguras = all(rv.es_segura for rv in rutas_validadas)
         
         mejor_ruta_segura = None
