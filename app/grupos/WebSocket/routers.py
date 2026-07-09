@@ -14,12 +14,35 @@ from ...usuarios.security import get_current_user_ws, SECRET_KEY, ALGORITHM
 from .ws_manager import WebSocketManager, UbicacionManager, grupo_notification_manager
 from ...services.fcm_service import fcm_service
 from ...usuarios.models import FCMToken
+from ...mediciones.models import LatenciaMetrica
 
 
 router = APIRouter(prefix="/ws", tags=["WebSocket"])
 
 manager = WebSocketManager()
 ubicacion_manager = UbicacionManager()
+
+_client_sent_at_cache: dict[int, tuple[int, datetime]] = {}
+
+def _save_ws_latency(
+    db: Session,
+    dispositivo_id: str,
+    endpoint: str,
+    client_sent_at: datetime,
+    server_ts: datetime,
+    codigo: int = 200,
+):
+    latencia_ms = (server_ts - client_sent_at).total_seconds() * 1000
+    registro = LatenciaMetrica(
+        dispositivo_id=dispositivo_id,
+        endpoint=endpoint,
+        metodo_http="WS",
+        latencia_ms=round(latencia_ms, 2),
+        codigo_respuesta=codigo,
+        timestamp=server_ts,
+    )
+    db.add(registro)
+    db.commit()
 
 
 @router.websocket("/ping")
@@ -890,6 +913,13 @@ async def websocket_grupo(websocket: WebSocket, grupo_id: int):
                 contenido = data.get("contenido", "").strip()
                 tipo = data.get("tipo", "texto")
                 temp_id = data.get("temp_id")  # 🆕 CAPTURAR temp_id del cliente
+                client_sent_at = data.get("client_sent_at")
+                if client_sent_at and isinstance(client_sent_at, str):
+                    try:
+                        client_sent_at = datetime.fromisoformat(client_sent_at.replace("Z", "+00:00"))
+                    except (ValueError, TypeError):
+                        client_sent_at = None
+                server_received_at = datetime.now(timezone.utc)
                 
                 if not contenido:
                     continue
@@ -988,6 +1018,12 @@ async def websocket_grupo(websocket: WebSocket, grupo_id: int):
                         })
                         print(f"📢 Notificación de entrega enviada para mensaje {mensaje.id}")
 
+                    server_broadcast_at = datetime.now(timezone.utc)
+                    if client_sent_at and enviado_exitosamente:
+                        _client_sent_at_cache[mensaje.id] = (user_id, client_sent_at)
+                        _save_ws_latency(db, str(user_id), "ws:mensaje_grupo", client_sent_at, server_broadcast_at)
+                        _save_ws_latency(db, str(user_id), "ws:mensaje_entregado", client_sent_at, server_broadcast_at)
+
                     # 9️⃣ Actualizar contadores y preparar FCM
                     tokens_para_fcm = []
                     
@@ -1085,6 +1121,18 @@ def notify_mensaje_leido_sync(grupo_id: int, mensaje_id: int, leido_por: int):
     """
     Notifica de forma síncrona que un mensaje fue leído
     """
+    cached = _client_sent_at_cache.get(mensaje_id)
+    if cached:
+        sender_id, client_sent_at = cached
+        try:
+            db = SessionLocal()
+            try:
+                _save_ws_latency(db, str(sender_id), "ws:mensaje_leido", client_sent_at, datetime.now(timezone.utc))
+            finally:
+                db.close()
+        except Exception as e:
+            print(f"⚠️ Error guardando latencia de lectura: {e}")
+
     import asyncio
     
     try:

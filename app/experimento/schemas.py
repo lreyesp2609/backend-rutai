@@ -62,3 +62,42 @@ class MetricasResponse(BaseModel):
     resumen_global: ResumenGlobal
     por_radio: dict  # {"50": MetricasBase, "100": ..., "200": ...}
     por_zona: List[MetricasZona]
+
+
+# ───────────────────────────────────────────────
+# Ground Truth Batch — Request / Response
+# ───────────────────────────────────────────────
+
+class GroundTruthBatchCreate(BaseModel):
+    registros: List[GroundTruthCreate] = Field(..., min_length=1, max_length=500)
+
+
+class GroundTruthBatchResult(BaseModel):
+    indice: int
+    error: str
+
+
+class GroundTruthBatchResponse(BaseModel):
+    insertados: int
+    fallidos: int
+    detalles: List[GroundTruthBatchResult] = []
+
+
+# ───────────────────────────────────────────────
+# Cobertura — Response
+# ───────────────────────────────────────────────
+
+class CoberturaZona(BaseModel):
+    zona_id: int
+    nombre: str
+    radio_metros: Optional[int] = None
+    total_geofence_triggers: int = 0
+    total_ground_truth: int = 0
+    cobertura_pct: float = 0.0  # (GT / triggers * 100), 0 si no hay triggers
+
+
+class CoberturaResponse(BaseModel):
+    total_zonas: int
+    total_triggers: int
+    total_ground_truth: int
+    zonas: List[CoberturaZona]

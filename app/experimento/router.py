@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import Optional, List
 from datetime import timedelta
 from collections import defaultdict
@@ -14,6 +15,11 @@ from .models import GroundTruth
 from .schemas import (
     GroundTruthCreate,
     GroundTruthResponse,
+    GroundTruthBatchCreate,
+    GroundTruthBatchResponse,
+    GroundTruthBatchResult,
+    CoberturaResponse,
+    CoberturaZona,
     MetricasResponse,
     ResumenGlobal,
     MetricasBase,
@@ -45,6 +51,20 @@ def listar_ground_truth(
 ):
     """Lista registros de ground truth con filtros opcionales."""
     return crud.listar_ground_truth(db, zona_id=zona_id, sesion_id=sesion_id)
+
+
+@router.post("/ground-truth/batch", response_model=GroundTruthBatchResponse)
+def crear_ground_truth_batch(
+    data: GroundTruthBatchCreate,
+    db: Session = Depends(get_db),
+):
+    """Carga masiva de ground truth desde campo. Inserta todos en una sola transacción."""
+    insertados, errores = crud.crear_ground_truth_batch(db, data.registros)
+    return GroundTruthBatchResponse(
+        insertados=len(insertados),
+        fallidos=len(errores),
+        detalles=[GroundTruthBatchResult(indice=e["indice"], error=e["error"]) for e in errores],
+    )
 
 
 # ───────────────────────────────────────────────
@@ -240,4 +260,70 @@ def obtener_metricas(
         resumen_global=resumen_global,
         por_radio=por_radio,
         por_zona=resultados_por_zona,
+    )
+
+
+# ───────────────────────────────────────────────
+# Cobertura endpoint
+# ───────────────────────────────────────────────
+
+@router.get("/cobertura", response_model=CoberturaResponse)
+def obtener_cobertura(
+    usuario_id: Optional[int] = Query(None, description="Filtrar por usuario"),
+    db: Session = Depends(get_db),
+):
+    """
+    Por zona activa, cuántos GeofenceTrigger existen vs. cuántos GroundTruth existen.
+    Ayuda a planear pruebas de campo identificando zonas con baja cobertura.
+    """
+    zonas = db.query(ZonaPeligrosaUsuario).filter(
+        ZonaPeligrosaUsuario.activa == True
+    ).all()
+
+    todos_los_triggers = db.query(GeofenceTrigger).all()
+    total_triggers_global = 0
+    total_gt_global = 0
+    resultado_zonas = []
+
+    for zona in zonas:
+        centro = zona.poligono[0] if zona.poligono else None
+        if centro is None:
+            continue
+
+        radio = zona.radio_metros or 200
+
+        triggers_zona = 0
+        for t in todos_los_triggers:
+            if t.gps_lat is None or t.gps_lon is None:
+                continue
+            distancia = calcular_distancia_haversine(
+                t.gps_lat, t.gps_lon,
+                centro["lat"], centro["lon"],
+            )
+            if distancia <= radio:
+                triggers_zona += 1
+
+        gts_zona = db.query(func.count(GroundTruth.id)).filter(
+            GroundTruth.zona_id == zona.id
+        ).scalar() or 0
+
+        cobertura = round((gts_zona / triggers_zona * 100), 1) if triggers_zona > 0 else 0.0
+
+        total_triggers_global += triggers_zona
+        total_gt_global += gts_zona
+
+        resultado_zonas.append(CoberturaZona(
+            zona_id=zona.id,
+            nombre=zona.nombre,
+            radio_metros=zona.radio_metros,
+            total_geofence_triggers=triggers_zona,
+            total_ground_truth=gts_zona,
+            cobertura_pct=cobertura,
+        ))
+
+    return CoberturaResponse(
+        total_zonas=len(resultado_zonas),
+        total_triggers=total_triggers_global,
+        total_ground_truth=total_gt_global,
+        zonas=resultado_zonas,
     )
