@@ -220,8 +220,9 @@ class CRUDRutas:
         db.commit()
         db.refresh(ruta)
 
-        # 4. ACTUALIZAR ESTADO UBICACIÓN
+        # 4. ACTUALIZAR ESTADO UBICACIÓN Y DURACIÓN REAL
         ubicacion_id = None
+        duracion_real = None
         if ruta.estado_usuario_id:
             estado_usuario = db.query(EstadoUbicacionUsuario).filter(
                 EstadoUbicacionUsuario.id == ruta.estado_usuario_id
@@ -232,8 +233,9 @@ class CRUDRutas:
                 ubicacion_id = estado_usuario.ubicacion_id
                 
                 if ruta.fecha_inicio and ruta.fecha_fin:
-                    duracion = (ruta.fecha_fin - ruta.fecha_inicio).total_seconds()
-                    estado_usuario.duracion_segundos = duracion
+                    duracion_real = (ruta.fecha_fin - ruta.fecha_inicio).total_seconds()
+                    estado_usuario.duracion_segundos = duracion_real
+                    ruta.duracion_total = duracion_real  # ✅ Actualizar con duración real
                 
                 db.commit()
                 db.refresh(estado_usuario)
@@ -310,6 +312,10 @@ class CRUDRutas:
         respuesta = {
             "success": True,
             "ruta_id": ruta_id,
+            "distancia_total": ruta.distancia_total,
+            "duracion_total": duracion_real if duracion_real is not None else ruta.duracion_total,
+            "fecha_inicio": ruta.fecha_inicio.isoformat() if ruta.fecha_inicio else None,
+            "fecha_fin": ruta.fecha_fin.isoformat() if ruta.fecha_fin else None,
             "alerta_desobediencia": resultado_desobediencia.get("debe_alertar", False),
             "mensaje_alerta": resultado_desobediencia.get("mensaje", None),
             "similitud_calculada": resultado_desobediencia.get("similitud", 0),
@@ -321,7 +327,8 @@ class CRUDRutas:
                 "tiene_geometria_recomendada": bool(ruta.geometria),
                 "ubicacion_id": ubicacion_id,
                 "es_ruta_similar": resultado_desobediencia.get("es_ruta_similar", False),
-                "detalles_analisis": resultado_desobediencia.get("detalles_analisis", {})
+                "detalles_analisis": resultado_desobediencia.get("detalles_analisis", {}),
+                "duracion_real_calculada": duracion_real
             }
         }
         

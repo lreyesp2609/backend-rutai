@@ -191,6 +191,33 @@ def validar_rutas_seguridad(
             ZonaPeligrosaUsuario.activa == True
         ).all()
 
+        # ✅ Early return: sin zonas propias, todo es seguro
+        if not zonas_propias:
+            ucb_service = UCBService(db)
+            mejor_tipo = request.rutas[0].tipo if request.rutas else "fastest"
+            return ValidarRutasResponse(
+                rutas_validadas=[
+                    RutaValidada(
+                        tipo=r.tipo,
+                        es_segura=True,
+                        nivel_riesgo=0,
+                        zonas_detectadas=[],
+                        mensaje=None,
+                        distancia=r.distance,
+                        duracion=r.duration
+                    ) for r in request.rutas
+                ],
+                tipo_ml_recomendado=ucb_service.seleccionar_tipo_ruta(
+                    usuario_id=current_user.id,
+                    ubicacion_id=request.ubicacion_id
+                ) if request.rutas else None,
+                todas_seguras=True,
+                mejor_ruta_segura=traducir_tipo_ruta(mejor_tipo),
+                advertencia_general=None,
+                total_zonas_usuario=0,
+                zonas_publicas_encontradas=0
+            )
+
         # 🔥 CREAR SET DE IDs Y TAMBIÉN SET DE "HUELLAS" (nombre + coordenadas)
         zonas_ids_propias = {z.id for z in zonas_propias}
 
